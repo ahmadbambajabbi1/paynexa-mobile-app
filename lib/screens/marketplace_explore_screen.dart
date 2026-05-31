@@ -268,7 +268,7 @@
 //                   children: [
 //                     const Row(
 //                       children: [
-//                         Icon(Icons.tune, size: 18, color: AppColors.gambianBlue),
+//                         Icon(Icons.tune, size: 18, color: AppColors.primaryColorBlack),
 //                         SizedBox(width: 8),
 //                         Text('Filters', style: TextStyle(fontWeight: FontWeight.w700)),
 //                       ],
@@ -423,7 +423,7 @@
 //                       fontSize: 11,
 //                       fontWeight: FontWeight.w800,
 //                       letterSpacing: 0.6,
-//                       color: AppColors.gambianBlue,
+//                       color: AppColors.primaryColorBlack,
 //                     ),
 //                   ),
 //                   const SizedBox(height: 6),
@@ -477,10 +477,10 @@
 //                       if (row.distanceKm != null)
 //                         _Chip(
 //                           icon: Icons.location_searching,
-//                           iconColor: AppColors.gambianBlue,
+//                           iconColor: AppColors.primaryColorBlack,
 //                           text: '${row.distanceKm!.toStringAsFixed(1)} km',
 //                           bg: Colors.blue.shade50,
-//                           fg: AppColors.gambianBlue,
+//                           fg: AppColors.primaryColorBlack,
 //                         ),
 //                       if (response != null)
 //                         _Chip(
@@ -499,10 +499,10 @@
 //                       const Spacer(),
 //                       Text(
 //                         'View',
-//                         style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.gambianBlue),
+//                         style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.primaryColorBlack),
 //                       ),
 //                       const SizedBox(width: 6),
-//                       Icon(Icons.chevron_right, size: 18, color: AppColors.gambianBlue),
+//                       Icon(Icons.chevron_right, size: 18, color: AppColors.primaryColorBlack),
 //                     ],
 //                   )
 //                 ],
@@ -568,7 +568,7 @@ import 'service_detail_screen.dart';
 const _kLocationDecisionKey = 'marketplace_location_decision_made';
 
 // ─── Palette helpers ────────────────────────────────────────────────────────
-const _blue = AppColors.gambianBlue;          // #0C1C8C  – primary
+const _blue = AppColors.primaryColorBlack;          // #0C1C8C  – primary
 const _blueTint = Color(0xFFE8EBFA);           // light blue fill
 const _blueBorder = Color(0xFFB5BEF0);         // subtle blue border
 

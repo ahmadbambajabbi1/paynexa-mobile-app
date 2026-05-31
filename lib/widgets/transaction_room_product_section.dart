@@ -74,7 +74,7 @@ class TransactionRoomProductSection extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w900,
-                    color: AppColors.gambianBlue,
+                    color: AppColors.primaryColorBlack,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -155,7 +155,7 @@ class TransactionRoomProductSection extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w900,
-                          color: AppColors.gambianBlue,
+                          color: AppColors.primaryColorBlack,
                         ),
                       ),
                     ),

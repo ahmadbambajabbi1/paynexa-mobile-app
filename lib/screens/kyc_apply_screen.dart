@@ -63,10 +63,9 @@ class _KycApplyScreenState extends State<KycApplyScreen> {
       if (raw == null || (raw != 'LAWYER' && raw != 'AGENT')) return;
       if (!user.canApplyProfessionalKyc(raw)) {
         setState(() {
-          _ineligibleMessage =
-              raw == 'LAWYER'
-                  ? 'You already have a lawyer application in progress or approved.'
-                  : 'You already have an agent application in progress or approved.';
+          _ineligibleMessage = raw == 'LAWYER'
+              ? 'You already have a lawyer application in progress or approved.'
+              : 'You already have an agent application in progress or approved.';
         });
       } else {
         setState(() {
@@ -99,7 +98,8 @@ class _KycApplyScreenState extends State<KycApplyScreen> {
     final user = context.read<AuthController>().user;
     if (user != null && !user.canApplyProfessionalKyc(r)) {
       setState(() {
-        _ineligibleMessage = 'You are not eligible to start this application right now.';
+        _ineligibleMessage =
+            'You are not eligible to start this application right now.';
       });
     }
   }
@@ -167,7 +167,7 @@ class _KycApplyScreenState extends State<KycApplyScreen> {
         }
       }
       if (_govFile?.bytes == null) {
-        throw Exception('Government-issued ID is required.');
+        throw Exception('Government ID card or passport is required.');
       }
       if (_selfieBytes == null || _selfieBytes!.isEmpty) {
         throw Exception('Live selfie from camera is required.');
@@ -179,21 +179,24 @@ class _KycApplyScreenState extends State<KycApplyScreen> {
         throw Exception('Second ID or license document is required.');
       }
 
-      final details =
-          role == 'LAWYER'
-              ? <String, dynamic>{
-                  'barRegistrationNumber': _lawyerBar.text.trim(),
-                  'regulatoryBody': _lawyerBody.text.trim(),
-                  'lawFirmName': _lawyerFirm.text.trim(),
-                  'yearsLicensed': _lawyerYears.text.trim(),
-                }
-              : <String, dynamic>{
-                  'nationalIdOrPassportNumber': _agentId.text.trim(),
-                  'agentLicenseId': _agentLicense.text.trim(),
-                  'employerOrAgencyName': _agentEmployer.text.trim(),
-                };
+      final details = role == 'LAWYER'
+          ? <String, dynamic>{
+              'barRegistrationNumber': _lawyerBar.text.trim(),
+              'regulatoryBody': _lawyerBody.text.trim(),
+              'lawFirmName': _lawyerFirm.text.trim(),
+              'yearsLicensed': _lawyerYears.text.trim(),
+            }
+          : <String, dynamic>{
+              'nationalIdOrPassportNumber': _agentId.text.trim(),
+              'agentLicenseId': _agentLicense.text.trim(),
+              'employerOrAgencyName': _agentEmployer.text.trim(),
+            };
 
-      final applied = await applyProfessionalRole(token, role: role, details: details);
+      final applied = await applyProfessionalRole(
+        token,
+        role: role,
+        details: details,
+      );
 
       Future<void> docBytes(
         List<int> bytes,
@@ -259,7 +262,11 @@ class _KycApplyScreenState extends State<KycApplyScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.verified_user_rounded, size: 56, color: AppColors.gambianGreen),
+                  Icon(
+                    Icons.verified_user_rounded,
+                    size: 56,
+                    color: AppColors.gambianGreen,
+                  ),
                   const SizedBox(height: 16),
                   const Text(
                     'Application submitted',
@@ -274,7 +281,9 @@ class _KycApplyScreenState extends State<KycApplyScreen> {
                   const SizedBox(height: 24),
                   FilledButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    style: FilledButton.styleFrom(backgroundColor: AppColors.gambianBlue),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.primaryColorBlack,
+                    ),
                     child: const Text('Back to profile'),
                   ),
                 ],
@@ -301,7 +310,11 @@ class _KycApplyScreenState extends State<KycApplyScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.info_outline, size: 48, color: Colors.grey.shade600),
+                  Icon(
+                    Icons.info_outline,
+                    size: 48,
+                    color: Colors.grey.shade600,
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     _ineligibleMessage!,
@@ -311,7 +324,9 @@ class _KycApplyScreenState extends State<KycApplyScreen> {
                   const SizedBox(height: 24),
                   FilledButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    style: FilledButton.styleFrom(backgroundColor: AppColors.gambianBlue),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.primaryColorBlack,
+                    ),
                     child: const Text('OK'),
                   ),
                 ],
@@ -349,7 +364,7 @@ class _KycApplyScreenState extends State<KycApplyScreen> {
   }
 
   Widget _stepIndicator(BuildContext context) {
-    final labels = ['Role', 'Details', 'Upload'];
+    final labels = ['Role', 'Details', 'Documents'];
     return Row(
       children: List.generate(3, (i) {
         final active = _step == i;
@@ -366,23 +381,27 @@ class _KycApplyScreenState extends State<KycApplyScreen> {
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color:
-                            done
-                                ? AppColors.gambianGreen
-                                : active
-                                ? AppColors.gambianBlue
-                                : Colors.grey.shade300,
+                        color: done
+                            ? AppColors.gambianGreen
+                            : active
+                            ? AppColors.primaryColorBlack
+                            : Colors.grey.shade300,
                       ),
-                      child:
-                          done
-                              ? const Icon(Icons.check, color: Colors.white, size: 18)
-                              : Text(
-                                '${i + 1}',
-                                style: TextStyle(
-                                  color: active ? Colors.white : Colors.grey.shade700,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                      child: done
+                          ? const Icon(
+                              Icons.check,
+                              color: Colors.white,
+                              size: 18,
+                            )
+                          : Text(
+                              '${i + 1}',
+                              style: TextStyle(
+                                color: active
+                                    ? Colors.white
+                                    : Colors.grey.shade700,
+                                fontWeight: FontWeight.bold,
                               ),
+                            ),
                     ),
                     const SizedBox(height: 6),
                     Text(
@@ -391,7 +410,9 @@ class _KycApplyScreenState extends State<KycApplyScreen> {
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-                        color: active ? AppColors.gambianBlue : Colors.grey.shade600,
+                        color: active
+                            ? AppColors.primaryColorBlack
+                            : Colors.grey.shade600,
                       ),
                     ),
                   ],
@@ -403,7 +424,9 @@ class _KycApplyScreenState extends State<KycApplyScreen> {
                   child: Container(
                     height: 2,
                     width: 12,
-                    color: _step > i ? AppColors.gambianGreen : Colors.grey.shade300,
+                    color: _step > i
+                        ? AppColors.gambianGreen
+                        : Colors.grey.shade300,
                   ),
                 ),
             ],
@@ -417,7 +440,9 @@ class _KycApplyScreenState extends State<KycApplyScreen> {
     return [
       Text(
         'Select your role',
-        style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+        style: Theme.of(
+          context,
+        ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
       ),
       const SizedBox(height: 8),
       Text(
@@ -437,7 +462,7 @@ class _KycApplyScreenState extends State<KycApplyScreen> {
       _roleCard(
         context,
         title: 'Agent',
-        subtitle: 'ID numbers, license details, and two identity documents.',
+        subtitle: 'ID numbers, license details, and documents.',
         icon: Icons.handshake_rounded,
         selected: _role == 'AGENT',
         onTap: () => _setRole('AGENT'),
@@ -465,32 +490,47 @@ class _KycApplyScreenState extends State<KycApplyScreen> {
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               width: selected ? 2 : 1,
-              color: selected ? AppColors.gambianBlue : Colors.grey.shade300,
+              color: selected ? AppColors.primaryColorBlack : Colors.grey.shade300,
             ),
-            color: selected ? AppColors.gambianBlue.withOpacity(0.06) : Colors.white,
+            color: selected
+                ? AppColors.primaryColorBlack.withValues(alpha: 0.06)
+                : Colors.white,
           ),
           child: Row(
             children: [
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppColors.gambianBlue.withOpacity(0.1),
+                  color: AppColors.primaryColorBlack.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(icon, color: AppColors.gambianBlue, size: 28),
+                child: Icon(icon, color: AppColors.primaryColorBlack, size: 28),
               ),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 17,
+                      ),
+                    ),
                     const SizedBox(height: 4),
-                    Text(subtitle, style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
                   ],
                 ),
               ),
-              if (selected) const Icon(Icons.check_circle, color: AppColors.gambianBlue),
+              if (selected)
+                const Icon(Icons.check_circle, color: AppColors.primaryColorBlack),
             ],
           ),
         ),
@@ -513,7 +553,9 @@ class _KycApplyScreenState extends State<KycApplyScreen> {
           Expanded(
             child: Text(
               role == 'LAWYER' ? 'Lawyer credentials' : 'Agent credentials',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
           ),
         ],
@@ -585,7 +627,7 @@ class _KycApplyScreenState extends State<KycApplyScreen> {
                 _err = null;
               }),
         style: FilledButton.styleFrom(
-          backgroundColor: AppColors.gambianBlue,
+          backgroundColor: AppColors.primaryColorBlack,
           minimumSize: const Size.fromHeight(48),
         ),
         child: const Text('Continue to documents'),
@@ -607,34 +649,33 @@ class _KycApplyScreenState extends State<KycApplyScreen> {
           ),
           Expanded(
             child: Text(
-              'Upload documents',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              'Documents',
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
           ),
         ],
       ),
-      const SizedBox(height: 8),
-      Text(
-        'PDF, JPEG, PNG, WebP, or GIF — max 25 MB each. On iPhone, export photos as JPEG before uploading.',
-        style: TextStyle(fontSize: 13, color: Colors.grey.shade600, height: 1.4),
-      ),
       const SizedBox(height: 20),
       _uploadTile(
-        title: 'Live selfie (camera only)',
+        title: 'Selfie',
         isMandatory: true,
-        file:
-            _selfieBytes == null
-                ? null
-                : PlatformFile(
-                  name: _selfieName ?? 'selfie.jpg',
-                  size: _selfieBytes!.length,
-                  bytes: _selfieBytes,
-                ),
+        file: _selfieBytes == null
+            ? null
+            : PlatformFile(
+                name: _selfieName ?? 'selfie.jpg',
+                size: _selfieBytes!.length,
+                bytes: _selfieBytes,
+              ),
         onTap: _captureSelfie,
+        emptyLabel: 'Take photo',
+        emptyIcon: Icons.photo_camera_outlined,
+        filledIcon: Icons.photo_camera_rounded,
       ),
       const SizedBox(height: 12),
       _uploadTile(
-        title: 'Government-issued photo ID',
+        title: 'Government ID card or passport',
         isMandatory: true,
         file: _govFile,
         onTap: () => _pick('gov'),
@@ -650,7 +691,9 @@ class _KycApplyScreenState extends State<KycApplyScreen> {
       ],
       const SizedBox(height: 12),
       _uploadTile(
-        title: role == 'LAWYER' ? 'Supplemental (optional)' : 'Second ID or license *',
+        title: role == 'LAWYER'
+            ? 'Supplemental (optional)'
+            : 'Second ID or license *',
         isMandatory: role == 'AGENT',
         file: _extraFile,
         onTap: () => _pick('extra'),
@@ -659,7 +702,7 @@ class _KycApplyScreenState extends State<KycApplyScreen> {
       FilledButton(
         onPressed: _busy ? null : _submit,
         style: FilledButton.styleFrom(
-          backgroundColor: AppColors.gambianBlue,
+          backgroundColor: AppColors.primaryColorBlack,
           minimumSize: const Size.fromHeight(52),
         ),
         child: Text(_busy ? 'Submitting…' : 'Submit application'),
@@ -672,6 +715,9 @@ class _KycApplyScreenState extends State<KycApplyScreen> {
     required bool isMandatory,
     required PlatformFile? file,
     required VoidCallback onTap,
+    String emptyLabel = 'Tap to choose a file',
+    IconData emptyIcon = Icons.cloud_upload_outlined,
+    IconData filledIcon = Icons.description_rounded,
   }) {
     final f = file;
     final has = f != null && f.name.isNotEmpty;
@@ -684,15 +730,20 @@ class _KycApplyScreenState extends State<KycApplyScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: has ? AppColors.gambianBlue : Colors.grey.shade300, width: has ? 2 : 1),
-            color: has ? AppColors.gambianBlue.withOpacity(0.04) : Colors.grey.shade50,
+            border: Border.all(
+              color: has ? AppColors.primaryColorBlack : Colors.grey.shade300,
+              width: has ? 2 : 1,
+            ),
+            color: has
+                ? AppColors.primaryColorBlack.withValues(alpha: 0.04)
+                : Colors.grey.shade50,
           ),
           child: Row(
             children: [
               Icon(
-                has ? Icons.description_rounded : Icons.cloud_upload_outlined,
+                has ? filledIcon : emptyIcon,
                 size: 32,
-                color: has ? AppColors.gambianBlue : Colors.grey.shade500,
+                color: has ? AppColors.primaryColorBlack : Colors.grey.shade500,
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -704,20 +755,29 @@ class _KycApplyScreenState extends State<KycApplyScreen> {
                         Flexible(
                           child: Text(
                             title,
-                            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 15,
+                            ),
                           ),
                         ),
                         if (isMandatory)
                           Text(
                             ' *',
-                            style: TextStyle(color: Colors.red.shade700, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              color: Colors.red.shade700,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                       ],
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      has ? f.name : 'Tap to choose a file',
-                      style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                      has ? f.name : emptyLabel,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey.shade600,
+                      ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),

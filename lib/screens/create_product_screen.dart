@@ -434,7 +434,7 @@ class _CreateProductScreenState extends State<CreateProductScreen> {
               scrollDirection: Axis.horizontal,
               children: [
                 Material(
-                  color: AppColors.gambianBlue.withValues(alpha: 0.08),
+                  color: AppColors.primaryColorBlack.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(12),
                   child: InkWell(
                     onTap: _pickGalleryImages,
@@ -444,7 +444,7 @@ class _CreateProductScreenState extends State<CreateProductScreen> {
                       height: 88,
                       child: Icon(
                         Icons.add,
-                        color: AppColors.gambianBlue,
+                        color: AppColors.primaryColorBlack,
                         size: 32,
                       ),
                     ),
@@ -511,9 +511,9 @@ class _CreateProductScreenState extends State<CreateProductScreen> {
                 child: OutlinedButton.icon(
                   onPressed: canSubmit ? () => _submitCreate('DRAFT') : null,
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.gambianBlue,
+                    foregroundColor: AppColors.primaryColorBlack,
                     side: BorderSide(
-                      color: AppColors.gambianBlue.withValues(alpha: 0.35),
+                      color: AppColors.primaryColorBlack.withValues(alpha: 0.35),
                     ),
                     minimumSize: const Size.fromHeight(52),
                   ),
@@ -528,7 +528,7 @@ class _CreateProductScreenState extends State<CreateProductScreen> {
                       ? () => _submitCreate('PUBLISHED')
                       : null,
                   style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.gambianBlue,
+                    backgroundColor: AppColors.primaryColorBlack,
                     minimumSize: const Size.fromHeight(52),
                   ),
                   icon: const Icon(Icons.publish_outlined),

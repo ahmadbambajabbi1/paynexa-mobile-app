@@ -107,7 +107,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 children: [
                   _statCard(
                     icon: Icons.list_alt,
-                    iconColor: AppColors.gambianBlue,
+                    iconColor: AppColors.primaryColorBlack,
                     bg: Colors.blue.shade50,
                     label: 'Transactions',
                     value: '${_items.length}',
@@ -135,19 +135,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: AppColors.gambianBlue.withOpacity(0.4)),
+                          border: Border.all(color: AppColors.primaryColorBlack.withOpacity(0.4)),
                           color: Colors.white,
                         ),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.add_circle_outline, size: 36, color: AppColors.gambianBlue),
+                            Icon(Icons.add_circle_outline, size: 36, color: AppColors.primaryColorBlack),
                             const SizedBox(height: 8),
                             const Text(
                               'New transaction',
                               style: TextStyle(
                                 fontWeight: FontWeight.w600,
-                                color: AppColors.gambianBlue,
+                                color: AppColors.primaryColorBlack,
                               ),
                             ),
                           ],

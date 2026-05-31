@@ -177,7 +177,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
             widget.initial.productType.name,
             style: const TextStyle(
               fontWeight: FontWeight.w600,
-              color: AppColors.gambianBlue,
+              color: AppColors.primaryColorBlack,
               fontSize: 13,
             ),
           ),
@@ -218,7 +218,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
           FilledButton(
             onPressed: canSubmit && !_submitting ? _submit : null,
             style: FilledButton.styleFrom(
-              backgroundColor: AppColors.gambianBlue,
+              backgroundColor: AppColors.primaryColorBlack,
               minimumSize: const Size.fromHeight(48),
             ),
             child: Text(_submitting ? 'Saving…' : 'Save details'),

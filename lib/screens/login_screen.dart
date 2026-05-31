@@ -10,7 +10,6 @@ import '../auth/auth_controller.dart';
 import '../data/device_id_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
-import '../widgets/glass_card.dart';
 import '../widgets/page_scaffold.dart';
 
 enum _LoginStep { phone, code, pinNew, pinLogin }
@@ -54,10 +53,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _sendCode() async {
-    setState(() {
-      _error = null;
-      _busy = true;
-    });
+    setState(() { _error = null; _busy = true; });
     try {
       await phoneSendCode(_e164().trim(), _countryIso2);
       setState(() => _step = _LoginStep.code);
@@ -69,10 +65,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _verifySms() async {
-    setState(() {
-      _error = null;
-      _busy = true;
-    });
+    setState(() { _error = null; _busy = true; });
     try {
       final res = await phoneVerifySms(_e164().trim(), _codeCtrl.text.trim());
       setState(() {
@@ -113,10 +106,7 @@ class _LoginScreenState extends State<LoginScreen> {
         countryCode: _countryIso2,
       );
       if (!mounted) return;
-      await context.read<AuthController>().applySessionToken(
-            res.token,
-            pinBootstrap: res,
-          );
+      await context.read<AuthController>().applySessionToken(res.token, pinBootstrap: res);
     } catch (e) {
       setState(() => _error = errorMessage(e));
     } finally {
@@ -145,10 +135,7 @@ class _LoginScreenState extends State<LoginScreen> {
         countryCode: _countryIso2,
       );
       if (!mounted) return;
-      await context.read<AuthController>().applySessionToken(
-            res.token,
-            pinBootstrap: res,
-          );
+      await context.read<AuthController>().applySessionToken(res.token, pinBootstrap: res);
     } catch (e) {
       setState(() => _error = errorMessage(e));
     } finally {
@@ -167,55 +154,134 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final mq = MediaQuery.of(context);
+    final screenHeight = mq.size.height - mq.padding.top - mq.padding.bottom;
+
     return AuthPageScaffold(
-      child: GlassCard(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-        child: Column(
-          children: [
-            Container(
-              width: 64,
-              height: 64,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: AppColors.heroIconGradient,
-                boxShadow: [
-                  BoxShadow(blurRadius: 12, offset: Offset(0, 4), color: Colors.black26),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // Use the taller of layout constraints or screen height
+          final height = constraints.maxHeight.isFinite
+              ? constraints.maxHeight
+              : screenHeight;
+
+          return SizedBox(
+            height: height,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 28),
+              child: Column(
+                mainAxisSize: MainAxisSize.max,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // ── TOP: logo + title + subtitle + dots ──────────
+                  SizedBox(height: height * 0.07),
+                  Center(
+                    child: Container(
+                      width: 72,
+                      height: 72,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white,
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primaryColorBlack.withOpacity(0.18),
+                            blurRadius: 20,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: Image.asset(
+                        'assets/images/logo.jpeg',
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Center(child: Text(_title(), style: displayHeading(context))),
+                  const SizedBox(height: 6),
+                  Center(
+                    child: Text(
+                      _subtitle(),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Center(child: _buildStepDots()),
+
+                  // ── MIDDLE gap: 35% of screen pushes form to center
+                  SizedBox(height: height * 0.12),
+
+                  // ── FORM ─────────────────────────────────────────
+                  if (_step == _LoginStep.phone) _buildPhone(),
+                  if (_step == _LoginStep.code) _buildCode(),
+                  if (_step == _LoginStep.pinNew) _buildPinNew(),
+                  if (_step == _LoginStep.pinLogin) _buildPinLogin(),
+
+                  // ── BOTTOM: fills remaining space ─────────────────
+                  const Spacer(),
+
+                  // ── Disclaimer pinned to bottom ───────────────────
+                  if (_step == _LoginStep.phone)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 32),
+                      child: Text(
+                        'By continuing you agree to use SMS verification for this account.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+                      ),
+                    )
+                  else
+                    const SizedBox(height: 32),
                 ],
               ),
-              alignment: Alignment.center,
-              child: const Icon(Icons.phone_android, color: Colors.white, size: 28),
             ),
-            const SizedBox(height: 16),
-            Text('Sign in', style: displayHeading(context)),
-            const SizedBox(height: 8),
-            Text(
-              _subtitle(),
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
-            ),
-            const SizedBox(height: 24),
-            if (_step == _LoginStep.phone) _buildPhone(),
-            if (_step == _LoginStep.code) _buildCode(),
-            if (_step == _LoginStep.pinNew) _buildPinNew(),
-            if (_step == _LoginStep.pinLogin) _buildPinLogin(),
-            if (_step == _LoginStep.phone) ...[
-              const SizedBox(height: 24),
-              Text(
-                'By continuing you agree to use SMS verification for this account.',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
-              ),
-            ],
-          ],
-        ),
+          );
+        },
       ),
     );
+  }
+
+  Widget _buildStepDots() {
+    final steps = [_LoginStep.phone, _LoginStep.code, _LoginStep.pinNew];
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(steps.length, (i) {
+        final stepIndex = steps.indexOf(_step);
+        final isDone = i < stepIndex;
+        final isActive = i == stepIndex;
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          margin: const EdgeInsets.symmetric(horizontal: 4),
+          width: isActive ? 20 : 8,
+          height: 8,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(4),
+            color: isDone
+                ? AppColors.gambianGreen
+                : isActive
+                    ? AppColors.primaryColorBlack
+                    : Colors.grey.shade300,
+          ),
+        );
+      }),
+    );
+  }
+
+  String _title() {
+    switch (_step) {
+      case _LoginStep.phone:    return 'Sign in';
+      case _LoginStep.code:     return 'Verify phone';
+      case _LoginStep.pinNew:   return 'Create PIN';
+      case _LoginStep.pinLogin: return 'Welcome back';
+    }
   }
 
   String _subtitle() {
     switch (_step) {
       case _LoginStep.phone:
-        return 'One account for buying and selling — phone number and secure PIN.';
+        return 'Enter your phone number and secure PIN.';
       case _LoginStep.code:
         return 'Enter the code sent to ${_e164()}';
       case _LoginStep.pinNew:
@@ -227,6 +293,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Widget _buildPhone() {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         IntlPhoneField(
@@ -234,6 +301,10 @@ class _LoginScreenState extends State<LoginScreen> {
           decoration: InputDecoration(
             labelText: 'Phone number',
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.primaryColorBlack, width: 1.5),
+            ),
           ),
           onChanged: (PhoneNumber p) {
             setState(() {
@@ -247,8 +318,9 @@ class _LoginScreenState extends State<LoginScreen> {
         FilledButton(
           onPressed: _busy || !_phoneOk() ? null : _sendCode,
           style: FilledButton.styleFrom(
-            backgroundColor: AppColors.gambianBlue,
+            backgroundColor: AppColors.primaryColorBlack,
             padding: const EdgeInsets.symmetric(vertical: 14),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
           child: Text(_busy ? 'Sending…' : 'Send SMS code'),
         ),
@@ -258,6 +330,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Widget _buildCode() {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         TextField(
@@ -276,7 +349,10 @@ class _LoginScreenState extends State<LoginScreen> {
         const SizedBox(height: 16),
         FilledButton(
           onPressed: _busy || _codeCtrl.text.length != 6 ? null : _verifySms,
-          style: FilledButton.styleFrom(backgroundColor: AppColors.gambianBlue),
+          style: FilledButton.styleFrom(
+            backgroundColor: AppColors.primaryColorBlack,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
           child: Text(_busy ? 'Checking…' : 'Continue'),
         ),
         TextButton(onPressed: _backToPhone, child: const Text('Change number')),
@@ -286,6 +362,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Widget _buildPinNew() {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         TextField(
@@ -311,7 +388,10 @@ class _LoginScreenState extends State<LoginScreen> {
         const SizedBox(height: 16),
         FilledButton(
           onPressed: _busy ? null : _setPin,
-          style: FilledButton.styleFrom(backgroundColor: AppColors.gambianGreen),
+          style: FilledButton.styleFrom(
+            backgroundColor: AppColors.gambianGreen,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
           child: Text(_busy ? 'Saving…' : 'Create PIN and continue'),
         ),
       ],
@@ -320,6 +400,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Widget _buildPinLogin() {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         TextField(
@@ -335,7 +416,10 @@ class _LoginScreenState extends State<LoginScreen> {
         const SizedBox(height: 16),
         FilledButton(
           onPressed: _busy ? null : _verifyPin,
-          style: FilledButton.styleFrom(backgroundColor: AppColors.gambianBlue),
+          style: FilledButton.styleFrom(
+            backgroundColor: AppColors.primaryColorBlack,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
           child: Text(_busy ? 'Signing in…' : 'Sign in'),
         ),
       ],

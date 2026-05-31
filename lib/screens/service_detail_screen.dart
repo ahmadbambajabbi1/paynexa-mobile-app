@@ -315,7 +315,7 @@
 //                   fontSize: 16,
 //                   fontWeight: FontWeight.w800,
 //                   letterSpacing: 0.2,
-//                   color: AppColors.gambianBlue,
+//                   color: AppColors.primaryColorBlack,
 //                   decoration: TextDecoration.none,
 //                 ),
 //               ),
@@ -439,15 +439,15 @@
 //               width: 56,
 //               decoration: BoxDecoration(
 //                 shape: BoxShape.circle,
-//                 color: AppColors.gambianBlue.withValues(alpha: 0.08),
-//                 border: Border.all(color: AppColors.gambianBlue.withValues(alpha: 0.22)),
+//                 color: AppColors.primaryColorBlack.withValues(alpha: 0.08),
+//                 border: Border.all(color: AppColors.primaryColorBlack.withValues(alpha: 0.22)),
 //               ),
 //               child: Text(
 //                 initials,
 //                 style: const TextStyle(
 //                   fontSize: 16,
 //                   fontWeight: FontWeight.bold,
-//                   color: AppColors.gambianBlue,
+//                   color: AppColors.primaryColorBlack,
 //                 ),
 //               ),
 //             ),
@@ -463,7 +463,7 @@
 //                   const SizedBox(height: 4),
 //                   Text(
 //                     category.toUpperCase(),
-//                     style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.8, color: AppColors.gambianBlue),
+//                     style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.8, color: AppColors.primaryColorBlack),
 //                   ),
 //                 ],
 //               ),
@@ -504,7 +504,7 @@
 //                       },
 //                       icon: const Icon(Icons.map_outlined, size: 18),
 //                       label: const Text('Open in Maps'),
-//                       style: TextButton.styleFrom(foregroundColor: AppColors.gambianBlue),
+//                       style: TextButton.styleFrom(foregroundColor: AppColors.primaryColorBlack),
 //                     ),
 //                   ],
 //                 ],
@@ -655,7 +655,7 @@
 //               padding: const EdgeInsets.only(bottom: 8),
 //               child: LinearProgressIndicator(
 //                 minHeight: 2,
-//                 color: AppColors.gambianBlue,
+//                 color: AppColors.primaryColorBlack,
 //                 backgroundColor: Colors.grey.shade200,
 //               ),
 //             )
@@ -678,7 +678,7 @@
 //                     Row(
 //                       crossAxisAlignment: CrossAxisAlignment.start,
 //                       children: [
-//                         Icon(Icons.place_outlined, color: AppColors.gambianBlue, size: 22),
+//                         Icon(Icons.place_outlined, color: AppColors.primaryColorBlack, size: 22),
 //                         const SizedBox(width: 10),
 //                         Expanded(
 //                           child: Column(
@@ -768,7 +768,7 @@
 //             ],
 //             const SizedBox(height: 10),
 //             OutlinedButton.icon(
-//               style: OutlinedButton.styleFrom(foregroundColor: AppColors.gambianBlue),
+//               style: OutlinedButton.styleFrom(foregroundColor: AppColors.primaryColorBlack),
 //               onPressed: (!_mapsBackendReady || _locBusy) ? null : _useCurrentLocation,
 //               icon: _locBusy
 //                   ? SizedBox(
@@ -776,7 +776,7 @@
 //                       height: 16,
 //                       child: CircularProgressIndicator(
 //                         strokeWidth: 2,
-//                         color: AppColors.gambianBlue,
+//                         color: AppColors.primaryColorBlack,
 //                       ),
 //                     )
 //                   : const Icon(Icons.my_location_outlined),
@@ -830,7 +830,7 @@
 //           FilledButton.icon(
 //             style: FilledButton.styleFrom(
 //               minimumSize: const Size.fromHeight(48),
-//               backgroundColor: AppColors.gambianBlue,
+//               backgroundColor: AppColors.primaryColorBlack,
 //               foregroundColor: Colors.white,
 //             ),
 //             onPressed: token == null ? null : _book,
@@ -870,7 +870,7 @@
 //               },
 //               icon: const Icon(Icons.phone_outlined, size: 18),
 //               label: Text(u.phone!),
-//               style: TextButton.styleFrom(foregroundColor: AppColors.gambianBlue),
+//               style: TextButton.styleFrom(foregroundColor: AppColors.primaryColorBlack),
 //             ),
 //           ],
 //           if (u.email != null && u.email!.isNotEmpty)
@@ -881,7 +881,7 @@
 //               },
 //               icon: const Icon(Icons.email_outlined, size: 18),
 //               label: Text(u.email!, style: const TextStyle(fontSize: 14)),
-//               style: TextButton.styleFrom(foregroundColor: AppColors.gambianBlue),
+//               style: TextButton.styleFrom(foregroundColor: AppColors.primaryColorBlack),
 //             ),
 //         ],
 //       ),
@@ -1268,7 +1268,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                       icon: const Icon(Icons.refresh),
                       label: const Text('Retry'),
                       style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.gambianBlue,
+                        backgroundColor: AppColors.primaryColorBlack,
                       ),
                     ),
                   ],
@@ -1328,7 +1328,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
           expandedHeight: coverUrl != null ? 280 : 120,
           pinned: true,
           floating: false,
-          backgroundColor: AppColors.gambianBlue,
+          backgroundColor: AppColors.primaryColorBlack,
           foregroundColor: Colors.white,
           leading: IconButton(
             icon: Container(
@@ -1350,7 +1350,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                         coverUrl,
                         fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) =>
-                            Container(color: AppColors.gambianBlue),
+                            Container(color: AppColors.primaryColorBlack),
                       ),
                       Container(
                         decoration: BoxDecoration(
@@ -1367,7 +1367,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                       ),
                     ],
                   )
-                : Container(color: AppColors.gambianBlue),
+                : Container(color: AppColors.primaryColorBlack),
           ),
         ),
         SliverToBoxAdapter(
@@ -1401,7 +1401,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                             style: const TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.bold,
-                              color: AppColors.gambianBlue,
+                              color: AppColors.primaryColorBlack,
                             ),
                           ),
                         ),
@@ -1440,7 +1440,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                                   _TrustChip(
                                     icon: Icons.schedule_outlined,
                                     label: 'Response $responseHint',
-                                    color: AppColors.gambianBlue,
+                                    color: AppColors.primaryColorBlack,
                                   ),
                                 if (d.providerVerified)
                                   _TrustChip(
@@ -1472,7 +1472,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.gambianBlue.withOpacity(0.08),
+                    color: AppColors.primaryColorBlack.withOpacity(0.08),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
@@ -1481,7 +1481,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                       fontSize: 10,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 1,
-                      color: AppColors.gambianBlue,
+                      color: AppColors.primaryColorBlack,
                     ),
                   ),
                 ),
@@ -1540,7 +1540,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                             icon: const Icon(Icons.map_outlined, size: 18),
                             label: const Text('Open in Maps'),
                             style: TextButton.styleFrom(
-                              foregroundColor: AppColors.gambianBlue,
+                              foregroundColor: AppColors.primaryColorBlack,
                               padding: EdgeInsets.zero,
                             ),
                           ),
@@ -1628,10 +1628,10 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: AppColors.gambianBlue.withOpacity(0.06),
+                    color: AppColors.primaryColorBlack.withOpacity(0.06),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: AppColors.gambianBlue.withOpacity(0.1),
+                      color: AppColors.primaryColorBlack.withOpacity(0.1),
                     ),
                   ),
                   child: Row(
@@ -1686,7 +1686,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: const BorderSide(
-                          color: AppColors.gambianBlue,
+                          color: AppColors.primaryColorBlack,
                           width: 2,
                         ),
                       ),
@@ -1705,7 +1705,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                         if (!_mapsReadyChecked)
                           LinearProgressIndicator(
                             minHeight: 2,
-                            color: AppColors.gambianBlue,
+                            color: AppColors.primaryColorBlack,
                             backgroundColor: Colors.grey.shade200,
                           )
                         else if (kMapsWebBaseUrl.trim().isNotEmpty &&
@@ -1833,7 +1833,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
                                 borderSide: const BorderSide(
-                                  color: AppColors.gambianBlue,
+                                  color: AppColors.primaryColorBlack,
                                   width: 2,
                                 ),
                               ),
@@ -1896,9 +1896,9 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                             width: double.infinity,
                             child: OutlinedButton.icon(
                               style: OutlinedButton.styleFrom(
-                                foregroundColor: AppColors.gambianBlue,
+                                foregroundColor: AppColors.primaryColorBlack,
                                 side: BorderSide(
-                                  color: AppColors.gambianBlue.withOpacity(0.3),
+                                  color: AppColors.primaryColorBlack.withOpacity(0.3),
                                 ),
                                 padding: const EdgeInsets.symmetric(
                                   vertical: 12,
@@ -1916,7 +1916,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                                       height: 16,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
-                                        color: AppColors.gambianBlue,
+                                        color: AppColors.primaryColorBlack,
                                       ),
                                     )
                                   : const Icon(
@@ -1954,7 +1954,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: const BorderSide(
-                                color: AppColors.gambianBlue,
+                                color: AppColors.primaryColorBlack,
                                 width: 2,
                               ),
                             ),
@@ -1985,7 +1985,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: const BorderSide(
-                                color: AppColors.gambianBlue,
+                                color: AppColors.primaryColorBlack,
                                 width: 2,
                               ),
                             ),
@@ -2038,7 +2038,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
                     child: FilledButton.icon(
                       style: FilledButton.styleFrom(
                         minimumSize: const Size.fromHeight(52),
-                        backgroundColor: AppColors.gambianBlue,
+                        backgroundColor: AppColors.primaryColorBlack,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
@@ -2138,7 +2138,7 @@ class _SectionCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(icon, size: 18, color: AppColors.gambianBlue),
+              Icon(icon, size: 18, color: AppColors.primaryColorBlack),
               const SizedBox(width: 10),
               Text(
                 title,
@@ -2261,7 +2261,7 @@ class _ProviderContactCard extends StatelessWidget {
             icon: const Icon(Icons.phone_outlined, size: 18),
             label: Text(u.phone!),
             style: TextButton.styleFrom(
-              foregroundColor: AppColors.gambianBlue,
+              foregroundColor: AppColors.primaryColorBlack,
               padding: EdgeInsets.zero,
             ),
           ),
@@ -2275,7 +2275,7 @@ class _ProviderContactCard extends StatelessWidget {
             icon: const Icon(Icons.email_outlined, size: 18),
             label: Text(u.email!, style: const TextStyle(fontSize: 14)),
             style: TextButton.styleFrom(
-              foregroundColor: AppColors.gambianBlue,
+              foregroundColor: AppColors.primaryColorBlack,
               padding: EdgeInsets.zero,
             ),
           ),

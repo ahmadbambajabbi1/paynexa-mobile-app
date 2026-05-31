@@ -319,7 +319,7 @@ class _MarketplaceBookingPaymentSheetState extends State<_MarketplaceBookingPaym
                           : (_modeIndex == 0
                               ? (canWallet ? _payWithWallet : null)
                               : (hasCards ? _payWithCard : null)),
-                      style: FilledButton.styleFrom(backgroundColor: AppColors.gambianBlue),
+                      style: FilledButton.styleFrom(backgroundColor: AppColors.primaryColorBlack),
                       child: Text(_busy ? 'Working…' : 'Pay and confirm'),
                     ),
                   ),

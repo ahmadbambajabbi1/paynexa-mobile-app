@@ -78,8 +78,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final st = status.toLowerCase();
     if (st.contains('pending')) {
       return (
-        bg: AppColors.gambianBlue.withValues(alpha: 0.1),
-        text: AppColors.gambianBlue,
+        bg: AppColors.primaryColorBlack.withValues(alpha: 0.1),
+        text: AppColors.primaryColorBlack,
         icon: '⏳'
       );
     }
@@ -110,7 +110,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const CircularProgressIndicator(color: AppColors.gambianBlue),
+                const CircularProgressIndicator(color: AppColors.primaryColorBlack),
                 const SizedBox(height: 16),
                 Text(
                   'Loading notifications...',
@@ -155,12 +155,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                               height: 80,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: AppColors.gambianBlue.withValues(alpha: 0.1),
+                                color: AppColors.primaryColorBlack.withValues(alpha: 0.1),
                               ),
                               child: Icon(
                                 Icons.notifications_off_outlined,
                                 size: 40,
-                                color: AppColors.gambianBlue.withValues(alpha: 0.4),
+                                color: AppColors.primaryColorBlack.withValues(alpha: 0.4),
                               ),
                             ),
                             const SizedBox(height: 16),
@@ -220,7 +220,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
                               color: isNew
-                                  ? AppColors.gambianBlue.withValues(alpha: 0.2)
+                                  ? AppColors.primaryColorBlack.withValues(alpha: 0.2)
                                   : Colors.grey.shade200,
                               width: isNew ? 2 : 1,
                             ),

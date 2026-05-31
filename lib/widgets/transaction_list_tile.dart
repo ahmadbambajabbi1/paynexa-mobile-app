@@ -47,7 +47,7 @@ class TransactionListTileCard extends StatelessWidget {
 
   Color _statusFg(String status) {
     if (status == 'COMPLETED' || status == 'CLOSED') {
-      return AppColors.gambianBlue;
+      return AppColors.primaryColorBlack;
     }
     if (status == 'DISPUTED') {
       return Colors.red.shade800;
@@ -55,7 +55,7 @@ class TransactionListTileCard extends StatelessWidget {
     if (status == 'FUNDED' ||
         status == 'IN_PROGRESS' ||
         status == 'INSPECTION') {
-      return AppColors.gambianBlue;
+      return AppColors.primaryColorBlack;
     }
     return AppColors.gambianEarth;
   }
@@ -67,17 +67,17 @@ class TransactionListTileCard extends StatelessWidget {
         ? row.productTitle.trim()
         : 'Transaction ${row.id.substring(0, row.id.length >= 8 ? 8 : row.id.length)}';
     final progress = statusApproxProgress(row.status) / 100;
-    const accent = AppColors.gambianBlue;
+    const accent = AppColors.primaryColorBlack;
     final iconBg = _isPublic
         ? Colors.blue.shade50
         : _landOrEstate
         ? AppColors.gambianSand
         : Colors.blue.shade50;
     final iconFg = _isPublic
-        ? AppColors.gambianBlue
+        ? AppColors.primaryColorBlack
         : _landOrEstate
         ? AppColors.gambianEarth
-        : AppColors.gambianBlue;
+        : AppColors.primaryColorBlack;
 
     return Material(
       color: Colors.transparent,
@@ -242,7 +242,7 @@ class _WorkflowChip extends StatelessWidget {
       child: Text(
         isPublic ? 'Link' : 'Escrow',
         style: TextStyle(
-          color: AppColors.gambianBlue,
+          color: AppColors.primaryColorBlack,
           fontSize: 10,
           fontWeight: FontWeight.w900,
         ),
@@ -302,7 +302,7 @@ class _WorkflowChip extends StatelessWidget {
 //             border: Border.all(color: const Color(0xFFEEF0F6)),
 //             boxShadow: [
 //               BoxShadow(
-//                 color: AppColors.gambianBlue.withValues(alpha: 0.05),
+//                 color: AppColors.primaryColorBlack.withValues(alpha: 0.05),
 //                 blurRadius: 16,
 //                 offset: const Offset(0, 4),
 //               ),
@@ -423,7 +423,7 @@ class _WorkflowChip extends StatelessWidget {
 //     if (status == 'REFUNDED') return const Color(0xFF7C3AED);
 //     if (status == 'CLOSED') return Colors.grey.shade500;
 //     if (status == 'FUNDED' || status == 'IN_PROGRESS' || status == 'INSPECTION') {
-//       return AppColors.gambianBlue;
+//       return AppColors.primaryColorBlack;
 //     }
 //     return AppColors.gambianEarth;
 //   }
@@ -431,7 +431,7 @@ class _WorkflowChip extends StatelessWidget {
 //   Color _progressColor(String status) {
 //     if (status == 'COMPLETED') return const Color(0xFF16A34A);
 //     if (status == 'DISPUTED') return const Color(0xFFDC2626);
-//     return AppColors.gambianBlue;
+//     return AppColors.primaryColorBlack;
 //   }
 // }
 
@@ -446,13 +446,13 @@ class _WorkflowChip extends StatelessWidget {
 //       height: 46,
 //       decoration: BoxDecoration(
 //         color: isPublic
-//             ? AppColors.gambianBlue.withValues(alpha: 0.08)
+//             ? AppColors.primaryColorBlack.withValues(alpha: 0.08)
 //             : AppColors.gambianSand.withValues(alpha: 0.5),
 //         borderRadius: BorderRadius.circular(14),
 //       ),
 //       child: Icon(
 //         isPublic ? Icons.link_rounded : Icons.shield_outlined,
-//         color: isPublic ? AppColors.gambianBlue : AppColors.gambianEarth,
+//         color: isPublic ? AppColors.primaryColorBlack : AppColors.gambianEarth,
 //         size: 22,
 //       ),
 //     );

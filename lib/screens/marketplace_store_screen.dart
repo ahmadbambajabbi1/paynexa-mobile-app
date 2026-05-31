@@ -247,11 +247,11 @@
 //           child: Ink(
 //             decoration: BoxDecoration(
 //               borderRadius: BorderRadius.circular(12),
-//               color: active ? AppColors.gambianBlue : Colors.transparent,
+//               color: active ? AppColors.primaryColorBlack : Colors.transparent,
 //               boxShadow: active
 //                   ? [
 //                       BoxShadow(
-//                         color: AppColors.gambianBlue.withValues(alpha: 0.25),
+//                         color: AppColors.primaryColorBlack.withValues(alpha: 0.25),
 //                         blurRadius: 12,
 //                         offset: const Offset(0, 4),
 //                       ),
@@ -368,7 +368,7 @@
 //           style: const TextStyle(
 //             fontSize: 11,
 //             fontWeight: FontWeight.w700,
-//             color: AppColors.gambianBlue,
+//             color: AppColors.primaryColorBlack,
 //             height: 1.1,
 //           ),
 //         ),
@@ -378,7 +378,7 @@
 //       constraints: const BoxConstraints(minWidth: 20),
 //       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
 //       decoration: BoxDecoration(
-//         color: AppColors.gambianBlue,
+//         color: AppColors.primaryColorBlack,
 //         borderRadius: BorderRadius.circular(999),
 //         boxShadow: [
 //           BoxShadow(
@@ -412,7 +412,7 @@ import 'marketplace_bookings_screen.dart';
 import 'marketplace_services_screen.dart';
 import 'products_screen.dart';
 
-const _blue = AppColors.gambianBlue;
+const _blue = AppColors.primaryColorBlack;
 const _blueTint = Color(0xFFE8EBFA);
 const _blueBorder = Color(0xFFB5BEF0);
 

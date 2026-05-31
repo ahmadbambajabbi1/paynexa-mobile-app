@@ -8,8 +8,8 @@ ThemeData buildAppTheme() {
     useMaterial3: true,
     brightness: Brightness.light,
     colorScheme: ColorScheme.fromSeed(
-      seedColor: AppColors.gambianBlue,
-      primary: AppColors.gambianBlue,
+      seedColor: AppColors.primaryColorBlack,
+      primary: AppColors.primaryColorBlack,
       secondary: AppColors.gambianGreen,
       surface: Colors.white,
     ),
@@ -48,13 +48,13 @@ ThemeData buildAppTheme() {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.gambianBlue, width: 2),
+        borderSide: const BorderSide(color: AppColors.primaryColorBlack, width: 2),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.gambianBlue,
+        backgroundColor: AppColors.primaryColorBlack,
         foregroundColor: Colors.white,
         padding: const EdgeInsets.symmetric(vertical: 14),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

@@ -1,3 +1,5 @@
+// import 'dart:async';
+
 // import 'package:flutter/material.dart';
 // import 'package:flutter_stripe/flutter_stripe.dart';
 // import 'package:provider/provider.dart';
@@ -383,11 +385,11 @@
 //           Container(
 //             margin: const EdgeInsets.only(bottom: 16),
 //             decoration: BoxDecoration(
-//               color: AppColors.gambianBlue,
+//               color: AppColors.primaryColorBlack,
 //               borderRadius: BorderRadius.circular(18),
 //               boxShadow: [
 //                 BoxShadow(
-//                   color: AppColors.gambianBlue.withValues(alpha: 0.35),
+//                   color: AppColors.primaryColorBlack.withValues(alpha: 0.35),
 //                   blurRadius: 22,
 //                   offset: const Offset(0, 10),
 //                 ),
@@ -513,7 +515,7 @@
 //               ),
 //               backgroundColor: WidgetStateProperty.resolveWith(
 //                 (s) => s.contains(WidgetState.selected)
-//                     ? AppColors.gambianBlue
+//                     ? AppColors.primaryColorBlack
 //                     : Colors.white.withValues(alpha: 0.92),
 //               ),
 //               side: WidgetStateProperty.all(BorderSide(color: Colors.grey.shade300)),
@@ -570,7 +572,7 @@
 //                       children: [
 //                         Icon(
 //                           (m['provider'] == 'STRIPE') ? Icons.credit_card : Icons.phone_iphone,
-//                           color: AppColors.gambianBlue,
+//                           color: AppColors.primaryColorBlack,
 //                         ),
 //                         const SizedBox(width: 10),
 //                         Expanded(
@@ -822,6 +824,8 @@ class _WalletBody extends StatefulWidget {
 class _WalletBodyState extends State<_WalletBody>
     with SingleTickerProviderStateMixin {
   bool _loading = true;
+  bool _historyLoading = false;
+  bool _balanceHidden = false;
   int _activeTabIndex = 0;
   String _balance = '0';
   List<Map<String, dynamic>> _methods = const [];
@@ -867,37 +871,70 @@ class _WalletBodyState extends State<_WalletBody>
   Future<void> _refresh() async {
     final auth = context.read<AuthController>();
     final token = auth.token;
-    if (token == null || token.isEmpty) return;
+    if (token == null || token.isEmpty) {
+      setState(() => _loading = false);
+      return;
+    }
     setState(() => _loading = true);
     _fadeCtrl.reset();
     try {
-      final wallet = await getWallet(token);
-      final methods = await listPaymentMethods(token);
-      final stats = await getWalletTransferStats(token);
-      final transfers = await getWalletTransfers(token, limit: 200);
-      final ledger = await getWalletLedger(token, limit: 200);
+      final results = await Future.wait<Object>([
+        getWallet(token),
+        listPaymentMethods(token),
+        getWalletTransferStats(token),
+      ]);
+      final wallet = results[0] as WalletSummary;
+      final methods = results[1] as List<PaymentMethodSummary>;
+      final stats = results[2] as WalletTransferStats;
+      if (!mounted) return;
       setState(() {
         _balance = wallet.balance;
-        _ledger = ledger;
         _methods = methods
-            .map((m) => {
-                  'id': m.id,
-                  'label': m.label,
-                  'provider': m.provider,
-                  'type': m.type,
-                  'last4': m.last4,
-                  'brand': m.brand,
-                  'msisdn': m.msisdn,
-                })
+            .map(
+              (m) => {
+                'id': m.id,
+                'label': m.label,
+                'provider': m.provider,
+                'type': m.type,
+                'last4': m.last4,
+                'brand': m.brand,
+                'msisdn': m.msisdn,
+              },
+            )
             .toList();
-        _transfers = transfers;
         _stats = stats;
+        _loading = false;
       });
       _fadeCtrl.forward();
+      _refreshHistoryInBackground(token);
     } catch (e) {
       if (mounted) showSnack(context, _publicError(e));
     } finally {
       if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  void _refreshHistoryInBackground(String token) {
+    _refreshHistory(token);
+  }
+
+  Future<void> _refreshHistory(String token) async {
+    if (_historyLoading) return;
+    setState(() => _historyLoading = true);
+    try {
+      final results = await Future.wait<Object>([
+        getWalletTransfers(token, limit: 100),
+        getWalletLedger(token, limit: 100),
+      ]);
+      if (!mounted) return;
+      setState(() {
+        _transfers = results[0] as List<WalletTransferSummary>;
+        _ledger = results[1] as List<WalletLedgerEntry>;
+      });
+    } catch (e) {
+      if (mounted) showSnack(context, _publicError(e));
+    } finally {
+      if (mounted) setState(() => _historyLoading = false);
     }
   }
 
@@ -941,13 +978,15 @@ class _WalletBodyState extends State<_WalletBody>
     }
   }
 
-  Future<void> _depositWithStripe(
-      double amount, String paymentMethodId) async {
+  Future<void> _depositWithStripe(double amount, String paymentMethodId) async {
     final token = context.read<AuthController>().token;
     if (token == null || token.isEmpty) return;
     try {
-      final res = await createStripeDepositIntent(token,
-          amount: amount, paymentMethodId: paymentMethodId);
+      final res = await createStripeDepositIntent(
+        token,
+        amount: amount,
+        paymentMethodId: paymentMethodId,
+      );
       if (!mounted) return;
       final clientSecret = (res['clientSecret'] ?? '').toString();
       if (clientSecret.isEmpty) {
@@ -964,7 +1003,9 @@ class _WalletBodyState extends State<_WalletBody>
       await Stripe.instance.presentPaymentSheet();
       if (!mounted) return;
       showSnack(
-          context, 'Payment submitted. Wallet will update after confirmation.');
+        context,
+        'Payment submitted. Wallet will update after confirmation.',
+      );
       await _refresh();
     } catch (e) {
       if (mounted) showSnack(context, _publicError(e));
@@ -975,10 +1016,11 @@ class _WalletBodyState extends State<_WalletBody>
     final token = context.read<AuthController>().token;
     if (token == null || token.isEmpty) return;
     try {
-      final res = await createModernPayDepositIntent(token,
-          amount: amount,
-          clientRequestId:
-              DateTime.now().millisecondsSinceEpoch.toString());
+      final res = await createModernPayDepositIntent(
+        token,
+        amount: amount,
+        clientRequestId: DateTime.now().millisecondsSinceEpoch.toString(),
+      );
       if (!mounted) return;
       final checkoutUrl = (res['checkoutUrl'] ?? '').toString();
       final transferId = (res['transferId'] ?? '').toString();
@@ -986,8 +1028,10 @@ class _WalletBodyState extends State<_WalletBody>
         showSnack(context, 'Unable to start mobile wallet checkout');
         return;
       }
-      await launchUrl(Uri.parse(checkoutUrl),
-          mode: LaunchMode.externalApplication);
+      await launchUrl(
+        Uri.parse(checkoutUrl),
+        mode: LaunchMode.externalApplication,
+      );
       if (!mounted) return;
       final confirmed = await showDialog<bool>(
         context: context,
@@ -1000,8 +1044,10 @@ class _WalletBodyState extends State<_WalletBody>
         ),
       );
       if (confirmed != true || !mounted) return;
-      final result =
-          await confirmModernPayDeposit(token, transferId: transferId);
+      final result = await confirmModernPayDeposit(
+        token,
+        transferId: transferId,
+      );
       if (!mounted) return;
       final status = (result['status'] ?? '').toString();
       if (status == 'SUCCEEDED') {
@@ -1014,7 +1060,9 @@ class _WalletBodyState extends State<_WalletBody>
         return;
       }
       showSnack(
-          context, 'Payment is still processing. Please confirm again shortly.');
+        context,
+        'Payment is still processing. Please confirm again shortly.',
+      );
     } catch (e) {
       if (mounted) showSnack(context, _publicError(e));
     }
@@ -1028,8 +1076,9 @@ class _WalletBodyState extends State<_WalletBody>
     );
     if (!mounted || source == null) return;
 
-    final stripeOptions =
-        _methods.where((m) => m['provider'] == 'STRIPE').toList();
+    final stripeOptions = _methods
+        .where((m) => m['provider'] == 'STRIPE')
+        .toList();
     if (source == 'card' && stripeOptions.isEmpty) {
       showSnack(context, 'Add a card first before depositing.');
       return;
@@ -1079,10 +1128,12 @@ class _WalletBodyState extends State<_WalletBody>
     if (!mounted || amount == null) return;
 
     try {
-      await requestPayout(token,
-          amount: amount,
-          provider: 'MODERNPAY',
-          providerPayload: {'note': 'MVP: payout execution not wired yet'});
+      await requestPayout(
+        token,
+        amount: amount,
+        provider: 'MODERNPAY',
+        providerPayload: {'note': 'MVP: payout execution not wired yet'},
+      );
       if (!mounted) return;
       showSnack(context, 'Payout requested (processing).');
       await _refresh();
@@ -1096,40 +1147,42 @@ class _WalletBodyState extends State<_WalletBody>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cardMethods =
-        _methods.where((m) => m['provider'] == 'STRIPE').toList();
-    final mobileMethods =
-        _methods.where((m) => m['provider'] == 'MODERNPAY').toList();
+    final cardMethods = _methods
+        .where((m) => m['provider'] == 'STRIPE')
+        .toList();
+    final mobileMethods = _methods
+        .where((m) => m['provider'] == 'MODERNPAY')
+        .toList();
     final totalDeposited = double.tryParse(_stats.totalDeposited) ?? 0;
     final totalWithdrawn = double.tryParse(_stats.totalWithdrawn) ?? 0;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6FB),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: false,
-        title: const Text(
-          'Wallet',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w800,
-            letterSpacing: -0.4,
-            color: Color(0xFF0D1B3E),
-          ),
-        ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: _RefreshIconButton(
-              loading: _loading,
-              onPressed: _refresh,
-            ),
-          ),
-        ],
-      ),
+      // appBar: AppBar(
+      //   backgroundColor: Colors.transparent,
+      //   elevation: 0,
+      //   centerTitle: false,
+      //   // title: const Text(
+      //   //   'Wallet',
+      //   //   style: TextStyle(
+      //   //     fontSize: 20,
+      //   //     fontWeight: FontWeight.w800,
+      //   //     letterSpacing: -0.4,
+      //   //     color: Color(0xFF0D1B3E),
+      //   //   ),
+      //   // ),
+      //   actions: [
+      //     Padding(
+      //       padding: const EdgeInsets.only(right: 8),
+      //       child: _RefreshIconButton(
+      //         loading: _loading,
+      //         onPressed: _refresh,
+      //       ),
+      //     ),
+      //   ],
+      // ),
       body: RefreshIndicator(
-        color: AppColors.gambianBlue,
+        color: AppColors.primaryColorBlack,
         onRefresh: _refresh,
         child: FadeTransition(
           opacity: _loading ? const AlwaysStoppedAnimation(1) : _fadeAnim,
@@ -1140,12 +1193,16 @@ class _WalletBodyState extends State<_WalletBody>
               // ── Hero balance card ──────────────
               _HeroCard(
                 balance: _balance,
+                balanceHidden: _balanceHidden,
                 cardCount: cardMethods.length,
                 mobileCount: mobileMethods.length,
                 txCount: _stats.transferCount,
                 totalDeposited: totalDeposited,
                 totalWithdrawn: totalWithdrawn,
                 loading: _loading,
+                onToggleBalance: () {
+                  setState(() => _balanceHidden = !_balanceHidden);
+                },
                 onDeposit: _addFunds,
                 onWithdraw: _requestPayout,
               ),
@@ -1172,7 +1229,7 @@ class _WalletBodyState extends State<_WalletBody>
                 _TransactionsTab(
                   transfers: _transfers,
                   ledger: _ledger,
-                  loading: _loading,
+                  loading: _historyLoading,
                   theme: theme,
                 ),
             ],
@@ -1190,23 +1247,27 @@ class _WalletBodyState extends State<_WalletBody>
 class _HeroCard extends StatelessWidget {
   const _HeroCard({
     required this.balance,
+    required this.balanceHidden,
     required this.cardCount,
     required this.mobileCount,
     required this.txCount,
     required this.totalDeposited,
     required this.totalWithdrawn,
     required this.loading,
+    required this.onToggleBalance,
     required this.onDeposit,
     required this.onWithdraw,
   });
 
   final String balance;
+  final bool balanceHidden;
   final int cardCount;
   final int mobileCount;
   final int txCount;
   final double totalDeposited;
   final double totalWithdrawn;
   final bool loading;
+  final VoidCallback onToggleBalance;
   final VoidCallback onDeposit;
   final VoidCallback onWithdraw;
 
@@ -1215,18 +1276,18 @@ class _HeroCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF0A2463), Color(0xFF1A3A7A)],
+          colors: [AppColors.primaryColorBlack, AppColors.primaryColorBlack],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF0A2463).withValues(alpha: 0.40),
-            blurRadius: 32,
-            offset: const Offset(0, 14),
-          ),
-        ],
+        // boxShadow: [
+        //   BoxShadow(
+        //     color:AppColors.primaryColorBlack,
+        //     blurRadius: 32,
+        //     offset: const Offset(0, 14),
+        //   ),
+        // ],
       ),
       child: Stack(
         children: [
@@ -1239,7 +1300,7 @@ class _HeroCard extends StatelessWidget {
               height: 160,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.05),
+                color: AppColors.primaryColorBlack,
               ),
             ),
           ),
@@ -1251,7 +1312,7 @@ class _HeroCard extends StatelessWidget {
               height: 110,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.04),
+                color: AppColors.primaryColorBlack,
               ),
             ),
           ),
@@ -1261,38 +1322,62 @@ class _HeroCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Label
-                Text(
-                  'Available Balance',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.65),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.8,
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Available Balance',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.65),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.8,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: onToggleBalance,
+                      visualDensity: VisualDensity.compact,
+                      tooltip: balanceHidden ? 'Show balance' : 'Hide balance',
+                      icon: Icon(
+                        balanceHidden
+                            ? Icons.visibility_off_rounded
+                            : Icons.visibility_rounded,
+                        color: Colors.white.withValues(alpha: 0.72),
+                        size: 20,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 2),
                 // Balance
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text(
-                      kCurrencyPrefix,
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.7),
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        height: 1.6,
+                    if (!balanceHidden) ...[
+                      Text(
+                        kCurrencyPrefix,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.7),
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          height: 1.6,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      balance,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 38,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: -1,
-                        height: 1,
+                      const SizedBox(width: 4),
+                    ],
+                    Flexible(
+                      child: Text(
+                        balanceHidden ? '•••••••' : balance,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 38,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -1,
+                          height: 1,
+                        ),
                       ),
                     ),
                   ],
@@ -1305,8 +1390,9 @@ class _HeroCard extends StatelessWidget {
                   children: [
                     _Chip(label: '$cardCount card${cardCount == 1 ? '' : 's'}'),
                     _Chip(
-                        label:
-                            '$mobileCount mobile${mobileCount == 1 ? '' : 's'}'),
+                      label:
+                          '$mobileCount mobile${mobileCount == 1 ? '' : 's'}',
+                    ),
                     _Chip(label: '$txCount transactions'),
                   ],
                 ),
@@ -1319,6 +1405,7 @@ class _HeroCard extends StatelessWidget {
                         label: 'Deposit',
                         icon: Icons.add_rounded,
                         filled: true,
+                        loading: loading,
                         onPressed: loading ? null : onDeposit,
                       ),
                     ),
@@ -1328,6 +1415,7 @@ class _HeroCard extends StatelessWidget {
                         label: 'Withdraw',
                         icon: Icons.south_rounded,
                         filled: false,
+                        loading: loading,
                         onPressed: loading ? null : onWithdraw,
                       ),
                     ),
@@ -1378,8 +1466,10 @@ class _Chip extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(999),
-        border:
-            Border.all(color: Colors.white.withValues(alpha: 0.18), width: 1),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.18),
+          width: 1,
+        ),
       ),
       child: Text(
         label,
@@ -1398,12 +1488,14 @@ class _HeroButton extends StatelessWidget {
     required this.label,
     required this.icon,
     required this.filled,
+    required this.loading,
     required this.onPressed,
   });
 
   final String label;
   final IconData icon;
   final bool filled;
+  final bool loading;
   final VoidCallback? onPressed;
 
   @override
@@ -1411,30 +1503,48 @@ class _HeroButton extends StatelessWidget {
     if (filled) {
       return FilledButton.icon(
         onPressed: onPressed,
-        icon: Icon(icon, size: 16),
+        icon: loading
+            ? const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : Icon(icon, size: 16),
         label: Text(label),
         style: FilledButton.styleFrom(
           backgroundColor: AppColors.gambianGold,
           foregroundColor: const Color(0xFF2A1A00),
+          disabledBackgroundColor: AppColors.gambianGold.withValues(
+            alpha: 0.72,
+          ),
+          disabledForegroundColor: const Color(
+            0xFF2A1A00,
+          ).withValues(alpha: 0.72),
           textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
           padding: const EdgeInsets.symmetric(vertical: 13),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
       );
     }
     return OutlinedButton.icon(
       onPressed: onPressed,
-      icon: Icon(icon, size: 16),
+      icon: loading
+          ? const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : Icon(icon, size: 16),
       label: Text(label),
       style: OutlinedButton.styleFrom(
         foregroundColor: Colors.white,
+        disabledForegroundColor: Colors.white.withValues(alpha: 0.68),
         side: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
-        textStyle:
-            const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+        textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
         padding: const EdgeInsets.symmetric(vertical: 13),
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
@@ -1460,8 +1570,10 @@ class _StatPill extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.09),
         borderRadius: BorderRadius.circular(14),
-        border:
-            Border.all(color: Colors.white.withValues(alpha: 0.15), width: 1),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.15),
+          width: 1,
+        ),
       ),
       child: Row(
         children: [
@@ -1572,7 +1684,7 @@ class _TabPill extends StatelessWidget {
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeOut,
           decoration: BoxDecoration(
-            color: active ? AppColors.gambianBlue : Colors.transparent,
+            color: active ? AppColors.primaryColorBlack : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
           ),
           alignment: Alignment.center,
@@ -1628,9 +1740,11 @@ class _OverviewTab extends StatelessWidget {
               icon: const Icon(Icons.add_rounded, size: 16),
               label: const Text('Add Card'),
               style: TextButton.styleFrom(
-                foregroundColor: AppColors.gambianBlue,
+                foregroundColor: AppColors.primaryColorBlack,
                 textStyle: const TextStyle(
-                    fontWeight: FontWeight.w700, fontSize: 13),
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                ),
               ),
             ),
           ],
@@ -1639,7 +1753,8 @@ class _OverviewTab extends StatelessWidget {
         if (methods.isEmpty)
           _EmptyState(
             icon: Icons.credit_card_off_outlined,
-            message: 'No payment methods yet.\nAdd a card to start transacting.',
+            message:
+                'No payment methods yet.\nAdd a card to start transacting.',
           )
         else
           ...methods.map(
@@ -1675,12 +1790,12 @@ class _MethodTile extends StatelessWidget {
             width: 42,
             height: 42,
             decoration: BoxDecoration(
-              color: AppColors.gambianBlue.withValues(alpha: 0.08),
+              color: AppColors.primaryColorBlack.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
               isStripe ? Icons.credit_card_rounded : Icons.phone_iphone_rounded,
-              color: AppColors.gambianBlue,
+              color: AppColors.primaryColorBlack,
               size: 20,
             ),
           ),
@@ -1689,29 +1804,35 @@ class _MethodTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 14,
-                        color: Color(0xFF0D1B3E))),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                    color: Color(0xFF0D1B3E),
+                  ),
+                ),
                 const SizedBox(height: 2),
-                Text(subtitle,
-                    style: const TextStyle(
-                        color: Color(0xFF8892A4), fontSize: 12)),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    color: Color(0xFF8892A4),
+                    fontSize: 12,
+                  ),
+                ),
               ],
             ),
           ),
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
             decoration: BoxDecoration(
-              color: AppColors.gambianBlue.withValues(alpha: 0.07),
+              color: AppColors.primaryColorBlack.withValues(alpha: 0.07),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
               (method['provider'] ?? '').toString(),
               style: TextStyle(
-                color: AppColors.gambianBlue,
+                color: AppColors.primaryColorBlack,
                 fontSize: 10,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0.4,
@@ -1804,7 +1925,9 @@ class _TransactionsTab extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 10),
-        if (activity.isEmpty)
+        if (loading && activity.isEmpty)
+          const _WalletTransactionsLoading()
+        else if (activity.isEmpty)
           _EmptyState(
             icon: Icons.receipt_long_outlined,
             message: 'No transactions yet.',
@@ -1821,6 +1944,40 @@ class _TransactionsTab extends StatelessWidget {
   }
 }
 
+class _WalletTransactionsLoading extends StatelessWidget {
+  const _WalletTransactionsLoading();
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassCard(
+      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
+      child: Center(
+        child: Column(
+          children: [
+            SizedBox(
+              height: 32,
+              width: 32,
+              child: CircularProgressIndicator(
+                strokeWidth: 3,
+                color: AppColors.primaryColorBlack,
+              ),
+            ),
+            const SizedBox(height: 14),
+            const Text(
+              'Loading transactions...',
+              style: TextStyle(
+                color: Color(0xFF8892A4),
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _ActivityTile extends StatelessWidget {
   const _ActivityTile({required this.item});
   final _WalletActivityItem item;
@@ -1828,9 +1985,7 @@ class _ActivityTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final positive = item.signedAmount >= 0;
-    final color = positive
-        ? const Color(0xFF22C55E)
-        : const Color(0xFFEF4444);
+    final color = positive ? const Color(0xFF22C55E) : const Color(0xFFEF4444);
     final bgColor = color;
     final date = item.createdAt.toLocal();
     final dateStr =
@@ -1913,9 +2068,7 @@ class _TransferTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDeposit = transfer.kind == 'DEPOSIT';
-    final color = isDeposit
-        ? const Color(0xFF22C55E)
-        : const Color(0xFFEF4444);
+    final color = isDeposit ? const Color(0xFF22C55E) : const Color(0xFFEF4444);
     final bgColor = isDeposit
         ? const Color(0xFF22C55E)
         : const Color(0xFFEF4444);
@@ -1936,9 +2089,7 @@ class _TransferTile extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
-              isDeposit
-                  ? Icons.north_east_rounded
-                  : Icons.south_west_rounded,
+              isDeposit ? Icons.north_east_rounded : Icons.south_west_rounded,
               color: color,
               size: 18,
             ),
@@ -1951,16 +2102,21 @@ class _TransferTile extends StatelessWidget {
                 Text(
                   '${isDeposit ? 'Deposit' : 'Withdrawal'} via ${transfer.provider}',
                   style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13,
-                      color: Color(0xFF0D1B3E)),
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                    color: Color(0xFF0D1B3E),
+                  ),
                 ),
                 const SizedBox(height: 3),
                 Row(
                   children: [
-                    Text(dateStr,
-                        style: const TextStyle(
-                            color: Color(0xFF8892A4), fontSize: 11)),
+                    Text(
+                      dateStr,
+                      style: const TextStyle(
+                        color: Color(0xFF8892A4),
+                        fontSize: 11,
+                      ),
+                    ),
                     const SizedBox(width: 8),
                     _StatusBadge(status: transfer.status),
                   ],
@@ -2055,8 +2211,7 @@ class _EmptyState extends StatelessWidget {
 }
 
 class _RefreshIconButton extends StatelessWidget {
-  const _RefreshIconButton(
-      {required this.loading, required this.onPressed});
+  const _RefreshIconButton({required this.loading, required this.onPressed});
   final bool loading;
   final VoidCallback onPressed;
 
@@ -2070,7 +2225,7 @@ class _RefreshIconButton extends StatelessWidget {
               height: 18,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                color: AppColors.gambianBlue,
+                color: AppColors.primaryColorBlack,
               ),
             )
           : const Icon(Icons.refresh_rounded, color: Color(0xFF0D1B3E)),
@@ -2101,10 +2256,14 @@ class _ConfirmDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      title: Text(title,
-          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
-      content: Text(body,
-          style: const TextStyle(color: Color(0xFF5A6478), height: 1.5)),
+      title: Text(
+        title,
+        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17),
+      ),
+      content: Text(
+        body,
+        style: const TextStyle(color: Color(0xFF5A6478), height: 1.5),
+      ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context, false),
@@ -2113,9 +2272,10 @@ class _ConfirmDialog extends StatelessWidget {
         FilledButton(
           onPressed: () => Navigator.pop(context, true),
           style: FilledButton.styleFrom(
-            backgroundColor: AppColors.gambianBlue,
+            backgroundColor: AppColors.primaryColorBlack,
             shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10)),
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
           child: Text(confirmLabel),
         ),
@@ -2159,13 +2319,14 @@ class _AmountDialogState extends State<_AmountDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      title: Text(widget.title,
-          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
+      title: Text(
+        widget.title,
+        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17),
+      ),
       content: TextField(
         controller: _ctrl,
         autofocus: true,
-        keyboardType:
-            const TextInputType.numberWithOptions(decimal: true),
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
         onSubmitted: (_) => _submit(),
         decoration: InputDecoration(
           prefixText: '${widget.currency} ',
@@ -2176,8 +2337,7 @@ class _AmountDialogState extends State<_AmountDialog> {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide:
-                BorderSide(color: AppColors.gambianBlue, width: 2),
+            borderSide: BorderSide(color: AppColors.primaryColorBlack, width: 2),
           ),
         ),
       ),
@@ -2189,9 +2349,10 @@ class _AmountDialogState extends State<_AmountDialog> {
         FilledButton(
           onPressed: _submit,
           style: FilledButton.styleFrom(
-            backgroundColor: AppColors.gambianBlue,
+            backgroundColor: AppColors.primaryColorBlack,
             shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10)),
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
           child: const Text('Continue'),
         ),
@@ -2227,9 +2388,10 @@ class _DepositSourceSheet extends StatelessWidget {
           const Text(
             'Add Funds',
             style: TextStyle(
-                fontWeight: FontWeight.w800,
-                fontSize: 18,
-                color: Color(0xFF0D1B3E)),
+              fontWeight: FontWeight.w800,
+              fontSize: 18,
+              color: Color(0xFF0D1B3E),
+            ),
           ),
           const SizedBox(height: 6),
           const Text(
@@ -2253,8 +2415,10 @@ class _DepositSourceSheet extends StatelessWidget {
           const SizedBox(height: 10),
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel',
-                style: TextStyle(color: Color(0xFF8892A4))),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: Color(0xFF8892A4)),
+            ),
           ),
         ],
       ),
@@ -2281,8 +2445,7 @@ class _SheetOption extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
           border: Border.all(color: const Color(0xFFE8EBF2)),
           borderRadius: BorderRadius.circular(16),
@@ -2293,30 +2456,36 @@ class _SheetOption extends StatelessWidget {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: AppColors.gambianBlue.withValues(alpha: 0.08),
+                color: AppColors.primaryColorBlack.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(icon, color: AppColors.gambianBlue, size: 22),
+              child: Icon(icon, color: AppColors.primaryColorBlack, size: 22),
             ),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(label,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 14,
-                          color: Color(0xFF0D1B3E))),
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                      color: Color(0xFF0D1B3E),
+                    ),
+                  ),
                   const SizedBox(height: 2),
-                  Text(subtitle,
-                      style: const TextStyle(
-                          color: Color(0xFF8892A4), fontSize: 12)),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      color: Color(0xFF8892A4),
+                      fontSize: 12,
+                    ),
+                  ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right_rounded,
-                color: Color(0xFFCDD2DE)),
+            const Icon(Icons.chevron_right_rounded, color: Color(0xFFCDD2DE)),
           ],
         ),
       ),
@@ -2326,10 +2495,7 @@ class _SheetOption extends StatelessWidget {
 
 /// Method selection dialog (reused for card deposit)
 class _MethodSelectionDialog extends StatelessWidget {
-  const _MethodSelectionDialog({
-    required this.title,
-    required this.methods,
-  });
+  const _MethodSelectionDialog({required this.title, required this.methods});
 
   final String title;
   final List<Map<String, dynamic>> methods;
@@ -2338,8 +2504,10 @@ class _MethodSelectionDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      title: Text(title,
-          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
+      title: Text(
+        title,
+        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17),
+      ),
       content: SizedBox(
         width: 400,
         child: methods.isEmpty
@@ -2347,8 +2515,7 @@ class _MethodSelectionDialog extends StatelessWidget {
             : ListView.separated(
                 shrinkWrap: true,
                 itemCount: methods.length,
-                separatorBuilder: (_, __) =>
-                    const Divider(height: 1),
+                separatorBuilder: (_, __) => const Divider(height: 1),
                 itemBuilder: (context, i) {
                   final m = methods[i];
                   final isStripe = m['provider'] == 'STRIPE';
@@ -2360,19 +2527,21 @@ class _MethodSelectionDialog extends StatelessWidget {
                       : (m['msisdn'] ?? '').toString();
                   return ListTile(
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     leading: Icon(
                       isStripe
                           ? Icons.credit_card_rounded
                           : Icons.phone_iphone_rounded,
-                      color: AppColors.gambianBlue,
+                      color: AppColors.primaryColorBlack,
                     ),
-                    title: Text(label,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.w700)),
+                    title: Text(
+                      label,
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
                     subtitle: Text(sub),
-                    onTap: () => Navigator.pop(
-                        context, (m['id'] ?? '').toString()),
+                    onTap: () =>
+                        Navigator.pop(context, (m['id'] ?? '').toString()),
                   );
                 },
               ),

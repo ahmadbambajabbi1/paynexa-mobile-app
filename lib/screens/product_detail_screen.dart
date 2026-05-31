@@ -248,7 +248,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               fontSize: 12,
               fontWeight: FontWeight.w700,
               letterSpacing: 0.4,
-              color: AppColors.gambianBlue,
+              color: AppColors.primaryColorBlack,
             ),
           ),
           const SizedBox(height: 8),
@@ -390,7 +390,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             icon: const Icon(Icons.edit),
             label: const Text('Edit details'),
             style: FilledButton.styleFrom(
-              backgroundColor: AppColors.gambianBlue,
+              backgroundColor: AppColors.primaryColorBlack,
               minimumSize: const Size.fromHeight(48),
             ),
           ),

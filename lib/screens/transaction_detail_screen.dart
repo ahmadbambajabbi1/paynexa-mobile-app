@@ -164,14 +164,14 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: TextButton.icon(
-                      onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(Icons.arrow_back_rounded),
-                      label: const Text('Back to transactions'),
-                    ),
-                  ),
+                  // Align(
+                  //   alignment: Alignment.centerLeft,
+                  //   child: TextButton.icon(
+                  //     onPressed: () => Navigator.of(context).pop(),
+                  //     icon: const Icon(Icons.arrow_back_rounded),
+                  //     label: const Text('Back to transactions'),
+                  //   ),
+                  // ),
                   if (_err != null)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 12),
@@ -369,7 +369,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                     horizontal: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: active ? AppColors.gambianBlue : Colors.transparent,
+                    color: active ? AppColors.primaryColorBlack : Colors.transparent,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Column(
@@ -409,7 +409,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
     String selfRole,
     bool isPublicShareable,
   ) {
-    const workflowColor = AppColors.gambianBlue;
+    const workflowColor = AppColors.primaryColorBlack;
     final workflowBg = Colors.blue.shade50;
     final roleLabel = selfRole == 'buyer'
         ? 'Buyer'
@@ -522,7 +522,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
             style: TextStyle(
               fontSize: strong ? 18 : 14,
               fontWeight: strong ? FontWeight.w900 : FontWeight.w700,
-              color: strong ? AppColors.gambianBlue : Colors.grey.shade900,
+              color: strong ? AppColors.primaryColorBlack : Colors.grey.shade900,
             ),
           ),
         ],
@@ -614,7 +614,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                             ? 'Shareable sale'
                             : 'Two-party escrow',
                         style: const TextStyle(
-                          color: AppColors.gambianBlue,
+                          color: AppColors.primaryColorBlack,
                           fontSize: 11,
                           fontWeight: FontWeight.w900,
                         ),
@@ -645,7 +645,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                   FilledButton.icon(
                     onPressed: _busy ? null : _accept,
                     style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.gambianBlue,
+                      backgroundColor: AppColors.primaryColorBlack,
                     ),
                     icon: const Icon(Icons.check_rounded),
                     label: const Text('Accept transaction'),
@@ -656,7 +656,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                   FilledButton.icon(
                     onPressed: _busy ? null : () => _payFromWallet(tx),
                     style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.gambianBlue,
+                      backgroundColor: AppColors.primaryColorBlack,
                     ),
                     icon: const Icon(Icons.account_balance_wallet_outlined),
                     label: const Text('Pay from wallet'),
@@ -672,7 +672,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                         .map(
                           (s) => OutlinedButton(
                             onPressed: _busy ? null : () => _transition(s),
-                            child: Text(formatStatus(s)),
+                            child: Text(transitionActionLabel(s)),
                           ),
                         )
                         .toList(),
@@ -738,6 +738,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
               final actorLabel = userId != null && _room != null
                   ? timelineActorLabel(ev.actorId, _room!, userId)
                   : ev.actorId;
+              final displayDetail = formatTimelineDetail(ev.action, ev.detail);
               final isLast = index == events.length - 1;
               return Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -754,7 +755,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                         child: const Icon(
                           Icons.circle,
                           size: 7,
-                          color: AppColors.gambianBlue,
+                          color: AppColors.primaryColorBlack,
                         ),
                       ),
                       if (!isLast)
@@ -780,7 +781,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              ev.action,
+                              formatTimelineAction(ev.action, ev.detail),
                               style: const TextStyle(
                                 fontWeight: FontWeight.w800,
                               ),
@@ -793,10 +794,10 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                                 color: Colors.grey.shade500,
                               ),
                             ),
-                            if (ev.detail.isNotEmpty) ...[
+                            if (displayDetail.isNotEmpty) ...[
                               const SizedBox(height: 6),
                               Text(
-                                ev.detail,
+                                displayDetail,
                                 style: TextStyle(
                                   color: Colors.grey.shade700,
                                   height: 1.35,
@@ -805,7 +806,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                             ],
                             const SizedBox(height: 6),
                             Text(
-                              'Actor: $actorLabel',
+                              'By: $actorLabel',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: Colors.grey.shade600,
@@ -986,10 +987,11 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                 ],
                 const SizedBox(height: 10),
                 _summaryRow(
-                  'Fulfillment',
+                  'Delivery',
                   deliveryNeeded ? 'Delivery tracked' : 'Payment only',
                 ),
-                if (tx.shareToken != null || (tx.sharePath ?? '').isNotEmpty) ...[
+                if (tx.shareToken != null ||
+                    (tx.sharePath ?? '').isNotEmpty) ...[
                   const SizedBox(height: 10),
                   _shareLinkCard(tx),
                 ],
@@ -1357,7 +1359,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
         status == 'IN_PROGRESS' ||
         status == 'INSPECTION') {
       bg = Colors.blue.shade50;
-      fg = AppColors.gambianBlue;
+      fg = AppColors.primaryColorBlack;
     } else if (disputed) {
       bg = Colors.red.shade100;
       fg = Colors.red.shade900;
@@ -1384,7 +1386,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
             value: pct / 100,
             minHeight: 8,
             backgroundColor: Colors.grey.shade200,
-            color: AppColors.gambianBlue,
+            color: AppColors.primaryColorBlack,
           ),
         ),
         const SizedBox(height: 8),
@@ -1399,7 +1401,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                   CircleAvatar(
                     radius: 16,
                     backgroundColor: done
-                        ? AppColors.gambianBlue
+                        ? AppColors.primaryColorBlack
                         : Colors.grey.shade300,
                     child: Text(
                       '${i + 1}',
@@ -1430,7 +1432,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
         ? Colors.blue.shade50
         : AppColors.gambianSand.withValues(alpha: 0.45);
     final border = isBuyerTone ? Colors.blue.shade100 : AppColors.gambianSand;
-    final accent = isBuyerTone ? AppColors.gambianBlue : AppColors.gambianEarth;
+    final accent = isBuyerTone ? AppColors.primaryColorBlack : AppColors.gambianEarth;
     final hasContact =
         name?.isNotEmpty == true ||
         email?.isNotEmpty == true ||
@@ -1490,7 +1492,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w900,
-                            color: AppColors.gambianBlue,
+                            color: AppColors.primaryColorBlack,
                           ),
                         ),
                       ),
@@ -1542,10 +1544,10 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
     final shareUrl = tx.shareToken != null
         ? '$kShareBaseUrl/pay/${tx.shareToken}'
         : (tx.sharePath != null
-            ? (tx.sharePath!.startsWith('http')
-                ? tx.sharePath!
-                : '$kShareBaseUrl${tx.sharePath}')
-            : '');
+              ? (tx.sharePath!.startsWith('http')
+                    ? tx.sharePath!
+                    : '$kShareBaseUrl${tx.sharePath}')
+              : '');
 
     if (shareUrl.isEmpty) return const SizedBox.shrink();
 
@@ -1553,23 +1555,25 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
       margin: const EdgeInsets.only(top: 14),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.gambianBlue.withValues(alpha: 0.05),
+        color: AppColors.primaryColorBlack.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.gambianBlue.withValues(alpha: 0.15)),
+        border: Border.all(
+          color: AppColors.primaryColorBlack.withValues(alpha: 0.15),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Row(
             children: [
-              Icon(Icons.link_rounded, color: AppColors.gambianBlue, size: 20),
+              Icon(Icons.link_rounded, color: AppColors.primaryColorBlack, size: 20),
               SizedBox(width: 8),
               Text(
                 'Shareable Payment Link',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
-                  color: AppColors.gambianBlue,
+                  color: AppColors.primaryColorBlack,
                 ),
               ),
             ],
@@ -1586,13 +1590,10 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                 flex: 2,
                 child: FilledButton.icon(
                   onPressed: () {
-                    Share.share(
-                      shareUrl,
-                      subject: 'Escrow Payment Link',
-                    );
+                    Share.share(shareUrl, subject: 'Escrow Payment Link');
                   },
                   style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.gambianBlue,
+                    backgroundColor: AppColors.primaryColorBlack,
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
@@ -1619,8 +1620,8 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                     );
                   },
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.gambianBlue,
-                    side: const BorderSide(color: AppColors.gambianBlue),
+                    foregroundColor: AppColors.primaryColorBlack,
+                    side: const BorderSide(color: AppColors.primaryColorBlack),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
@@ -1680,7 +1681,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
             style: const TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w800,
-              color: AppColors.gambianBlue,
+              color: AppColors.primaryColorBlack,
             ),
           ),
           const SizedBox(height: 4),
@@ -1986,7 +1987,7 @@ class _InviteParticipantSheetState extends State<_InviteParticipantSheet> {
 //                   child: tx == null
 //                       ? _buildLoading()
 //                       : RefreshIndicator(
-//                           color: AppColors.gambianBlue,
+//                           color: AppColors.primaryColorBlack,
 //                           onRefresh: _load,
 //                           child: SingleChildScrollView(
 //                             physics: const AlwaysScrollableScrollPhysics(),
@@ -2117,7 +2118,7 @@ class _InviteParticipantSheetState extends State<_InviteParticipantSheet> {
 //             style: TextStyle(
 //               fontSize: strong ? 17 : 13,
 //               fontWeight: strong ? FontWeight.w900 : FontWeight.w700,
-//               color: strong ? AppColors.gambianBlue : const Color(0xFF0F172A),
+//               color: strong ? AppColors.primaryColorBlack : const Color(0xFF0F172A),
 //               letterSpacing: strong ? -0.3 : 0,
 //             ),
 //           ),
@@ -2233,7 +2234,7 @@ class _InviteParticipantSheetState extends State<_InviteParticipantSheet> {
 //   @override
 //   Widget build(BuildContext context) {
 //     return Container(
-//       color: AppColors.gambianBlue,
+//       color: AppColors.primaryColorBlack,
 //       padding: const EdgeInsets.fromLTRB(8, 8, 16, 14),
 //       child: Row(
 //         children: [
@@ -2288,7 +2289,7 @@ class _InviteParticipantSheetState extends State<_InviteParticipantSheet> {
 //         borderRadius: BorderRadius.circular(20),
 //         border: Border.all(color: const Color(0xFFEEF0F6)),
 //         boxShadow: [
-//           BoxShadow(color: AppColors.gambianBlue.withValues(alpha: 0.06), blurRadius: 16, offset: const Offset(0, 4)),
+//           BoxShadow(color: AppColors.primaryColorBlack.withValues(alpha: 0.06), blurRadius: 16, offset: const Offset(0, 4)),
 //         ],
 //       ),
 //       child: Column(
@@ -2324,7 +2325,7 @@ class _InviteParticipantSheetState extends State<_InviteParticipantSheet> {
 //               minHeight: 6,
 //               backgroundColor: const Color(0xFFF1F5F9),
 //               valueColor: AlwaysStoppedAnimation<Color>(
-//                 tx.status == 'DISPUTED' ? Colors.red.shade400 : AppColors.gambianBlue,
+//                 tx.status == 'DISPUTED' ? Colors.red.shade400 : AppColors.primaryColorBlack,
 //               ),
 //             ),
 //           ),
@@ -2358,7 +2359,7 @@ class _InviteParticipantSheetState extends State<_InviteParticipantSheet> {
 //             children: [
 //               CircleAvatar(
 //                 radius: 13,
-//                 backgroundColor: done ? AppColors.gambianBlue : const Color(0xFFF1F5F9),
+//                 backgroundColor: done ? AppColors.primaryColorBlack : const Color(0xFFF1F5F9),
 //                 child: Icon(
 //                   done ? Icons.check_rounded : Icons.circle_outlined,
 //                   size: 13,
@@ -2371,7 +2372,7 @@ class _InviteParticipantSheetState extends State<_InviteParticipantSheet> {
 //                 style: TextStyle(
 //                   fontSize: 9,
 //                   fontWeight: FontWeight.w700,
-//                   color: done ? AppColors.gambianBlue : Colors.grey.shade400,
+//                   color: done ? AppColors.primaryColorBlack : Colors.grey.shade400,
 //                 ),
 //                 textAlign: TextAlign.center,
 //               ),
@@ -2423,7 +2424,7 @@ class _InviteParticipantSheetState extends State<_InviteParticipantSheet> {
 //                   child: Column(
 //                     mainAxisSize: MainAxisSize.min,
 //                     children: [
-//                       Icon(tab.icon, size: 16, color: active ? AppColors.gambianBlue : Colors.grey.shade500),
+//                       Icon(tab.icon, size: 16, color: active ? AppColors.primaryColorBlack : Colors.grey.shade500),
 //                       const SizedBox(height: 4),
 //                       Text(
 //                         tab.label,
@@ -2432,7 +2433,7 @@ class _InviteParticipantSheetState extends State<_InviteParticipantSheet> {
 //                         style: TextStyle(
 //                           fontSize: 11,
 //                           fontWeight: FontWeight.w800,
-//                           color: active ? AppColors.gambianBlue : Colors.grey.shade600,
+//                           color: active ? AppColors.primaryColorBlack : Colors.grey.shade600,
 //                         ),
 //                       ),
 //                     ],
@@ -2957,7 +2958,7 @@ class _InviteParticipantSheetState extends State<_InviteParticipantSheet> {
 //             icon: const Icon(Icons.person_add_alt_rounded, size: 16),
 //             label: Text('Invite $roleWord'),
 //             style: FilledButton.styleFrom(
-//               backgroundColor: AppColors.gambianBlue,
+//               backgroundColor: AppColors.primaryColorBlack,
 //               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
 //               padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
 //             ),
@@ -2968,8 +2969,8 @@ class _InviteParticipantSheetState extends State<_InviteParticipantSheet> {
 //           OutlinedButton(
 //             onPressed: busy ? null : () => onAccept(role, partySide),
 //             style: OutlinedButton.styleFrom(
-//               foregroundColor: AppColors.gambianBlue,
-//               side: const BorderSide(color: AppColors.gambianBlue),
+//               foregroundColor: AppColors.primaryColorBlack,
+//               side: const BorderSide(color: AppColors.primaryColorBlack),
 //               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
 //               padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
 //             ),
@@ -3021,10 +3022,10 @@ class _InviteParticipantSheetState extends State<_InviteParticipantSheet> {
 //                         width: 28,
 //                         height: 28,
 //                         decoration: BoxDecoration(
-//                           color: AppColors.gambianBlue.withValues(alpha: 0.1),
+//                           color: AppColors.primaryColorBlack.withValues(alpha: 0.1),
 //                           shape: BoxShape.circle,
 //                         ),
-//                         child: const Icon(Icons.circle, size: 7, color: AppColors.gambianBlue),
+//                         child: const Icon(Icons.circle, size: 7, color: AppColors.primaryColorBlack),
 //                       ),
 //                       if (!isLast)
 //                         Container(width: 2, height: 44, color: const Color(0xFFEEF0F6)),
@@ -3082,7 +3083,7 @@ class _InviteParticipantSheetState extends State<_InviteParticipantSheet> {
 //         color: Colors.white,
 //         borderRadius: BorderRadius.circular(20),
 //         border: Border.all(color: const Color(0xFFEEF0F6)),
-//         boxShadow: [BoxShadow(color: AppColors.gambianBlue.withValues(alpha: 0.04), blurRadius: 12, offset: const Offset(0, 3))],
+//         boxShadow: [BoxShadow(color: AppColors.primaryColorBlack.withValues(alpha: 0.04), blurRadius: 12, offset: const Offset(0, 3))],
 //       ),
 //       child: child,
 //     );
@@ -3126,7 +3127,7 @@ class _InviteParticipantSheetState extends State<_InviteParticipantSheet> {
 //             style: TextStyle(
 //               fontSize: accent ? 17 : 13,
 //               fontWeight: FontWeight.w900,
-//               color: accent ? AppColors.gambianBlue : const Color(0xFF0F172A),
+//               color: accent ? AppColors.primaryColorBlack : const Color(0xFF0F172A),
 //               letterSpacing: accent ? -0.3 : 0,
 //             ),
 //           ),
@@ -3145,7 +3146,7 @@ class _InviteParticipantSheetState extends State<_InviteParticipantSheet> {
 //     if (status == 'DISPUTED') return const Color(0xFFDC2626);
 //     if (status == 'REFUNDED') return const Color(0xFF7C3AED);
 //     if (status == 'CLOSED') return Colors.grey.shade500;
-//     if ({'FUNDED', 'IN_PROGRESS', 'INSPECTION'}.contains(status)) return AppColors.gambianBlue;
+//     if ({'FUNDED', 'IN_PROGRESS', 'INSPECTION'}.contains(status)) return AppColors.primaryColorBlack;
 //     return AppColors.gambianEarth;
 //   }
 
@@ -3186,12 +3187,12 @@ class _InviteParticipantSheetState extends State<_InviteParticipantSheet> {
 //     return Container(
 //       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
 //       decoration: BoxDecoration(
-//         color: AppColors.gambianBlue.withValues(alpha: 0.08),
+//         color: AppColors.primaryColorBlack.withValues(alpha: 0.08),
 //         borderRadius: BorderRadius.circular(999),
 //       ),
 //       child: Text(
 //         isPublic ? 'Shareable Sale' : 'Private Escrow',
-//         style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: AppColors.gambianBlue),
+//         style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: AppColors.primaryColorBlack),
 //       ),
 //     );
 //   }
@@ -3222,7 +3223,7 @@ class _InviteParticipantSheetState extends State<_InviteParticipantSheet> {
 //           icon: Icon(icon, size: 18),
 //           label: Text(label),
 //           style: FilledButton.styleFrom(
-//             backgroundColor: AppColors.gambianBlue,
+//             backgroundColor: AppColors.primaryColorBlack,
 //             padding: const EdgeInsets.symmetric(vertical: 13),
 //             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
 //           ),
@@ -3236,8 +3237,8 @@ class _InviteParticipantSheetState extends State<_InviteParticipantSheet> {
 //         icon: Icon(icon, size: 18),
 //         label: Text(label),
 //         style: OutlinedButton.styleFrom(
-//           foregroundColor: destructive ? const Color(0xFFDC2626) : AppColors.gambianBlue,
-//           side: BorderSide(color: destructive ? const Color(0xFFFCA5A5) : AppColors.gambianBlue),
+//           foregroundColor: destructive ? const Color(0xFFDC2626) : AppColors.primaryColorBlack,
+//           side: BorderSide(color: destructive ? const Color(0xFFFCA5A5) : AppColors.primaryColorBlack),
 //           padding: const EdgeInsets.symmetric(vertical: 13),
 //           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
 //         ),
@@ -3255,7 +3256,7 @@ class _InviteParticipantSheetState extends State<_InviteParticipantSheet> {
 //   @override
 //   Widget build(BuildContext context) {
 //     final isBuyer = label.toLowerCase().contains('buyer');
-//     final accent = isBuyer ? AppColors.gambianBlue : AppColors.gambianEarth;
+//     final accent = isBuyer ? AppColors.primaryColorBlack : AppColors.gambianEarth;
 //     final bg = accent.withValues(alpha: 0.06);
 //     final name = profile?.displayName?.trim();
 //     final email = profile?.email?.trim();
@@ -3398,18 +3399,18 @@ class _InviteParticipantSheetState extends State<_InviteParticipantSheet> {
 //     return Container(
 //       padding: const EdgeInsets.all(16),
 //       decoration: BoxDecoration(
-//         color: AppColors.gambianBlue.withValues(alpha: 0.04),
+//         color: AppColors.primaryColorBlack.withValues(alpha: 0.04),
 //         borderRadius: BorderRadius.circular(16),
-//         border: Border.all(color: AppColors.gambianBlue.withValues(alpha: 0.15)),
+//         border: Border.all(color: AppColors.primaryColorBlack.withValues(alpha: 0.15)),
 //       ),
 //       child: Column(
 //         crossAxisAlignment: CrossAxisAlignment.start,
 //         children: [
 //           const Row(
 //             children: [
-//               Icon(Icons.link_rounded, color: AppColors.gambianBlue, size: 18),
+//               Icon(Icons.link_rounded, color: AppColors.primaryColorBlack, size: 18),
 //               SizedBox(width: 8),
-//               Text('Payment Link', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: AppColors.gambianBlue)),
+//               Text('Payment Link', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: AppColors.primaryColorBlack)),
 //             ],
 //           ),
 //           const SizedBox(height: 8),
@@ -3424,7 +3425,7 @@ class _InviteParticipantSheetState extends State<_InviteParticipantSheet> {
 //                   icon: const Icon(Icons.share_rounded, size: 16),
 //                   label: const Text('Share', style: TextStyle(fontWeight: FontWeight.w800)),
 //                   style: FilledButton.styleFrom(
-//                     backgroundColor: AppColors.gambianBlue,
+//                     backgroundColor: AppColors.primaryColorBlack,
 //                     padding: const EdgeInsets.symmetric(vertical: 12),
 //                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
 //                   ),
@@ -3442,8 +3443,8 @@ class _InviteParticipantSheetState extends State<_InviteParticipantSheet> {
 //                   icon: const Icon(Icons.copy_rounded, size: 16),
 //                   label: const Text('Copy', style: TextStyle(fontWeight: FontWeight.w800)),
 //                   style: OutlinedButton.styleFrom(
-//                     foregroundColor: AppColors.gambianBlue,
-//                     side: const BorderSide(color: AppColors.gambianBlue),
+//                     foregroundColor: AppColors.primaryColorBlack,
+//                     side: const BorderSide(color: AppColors.primaryColorBlack),
 //                     padding: const EdgeInsets.symmetric(vertical: 12),
 //                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
 //                   ),

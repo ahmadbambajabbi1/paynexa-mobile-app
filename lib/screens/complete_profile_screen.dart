@@ -7,7 +7,6 @@ import '../auth/auth_controller.dart';
 import '../models/me_user.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
-import '../widgets/glass_card.dart';
 import '../widgets/page_scaffold.dart';
 
 class CompleteProfileScreen extends StatefulWidget {
@@ -57,10 +56,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   }
 
   Future<void> _submitForm() async {
-    setState(() {
-      _error = null;
-      _busy = true;
-    });
+    setState(() { _error = null; _busy = true; });
     try {
       final auth = context.read<AuthController>();
       final res = await auth.submitProfileDetails(
@@ -74,10 +70,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
         return;
       }
       if (res.needsEmailVerification) {
-        setState(() {
-          _emailStep = true;
-          _codeCtrl.clear();
-        });
+        setState(() { _emailStep = true; _codeCtrl.clear(); });
       }
     } catch (e) {
       setState(() => _error = errorMessage(e));
@@ -87,10 +80,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   }
 
   Future<void> _verifyEmail() async {
-    setState(() {
-      _error = null;
-      _busy = true;
-    });
+    setState(() { _error = null; _busy = true; });
     try {
       await context.read<AuthController>().verifyEmailCode(_codeCtrl.text.trim());
     } catch (e) {
@@ -101,10 +91,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   }
 
   Future<void> _resend() async {
-    setState(() {
-      _error = null;
-      _busy = true;
-    });
+    setState(() { _error = null; _busy = true; });
     try {
       await context.read<AuthController>().resendEmailVerification();
     } catch (e) {
@@ -117,39 +104,62 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return AuthPageScaffold(
-      child: GlassCard(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 28),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Container(
-              width: 64,
-              height: 64,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: AppColors.heroIconGradient,
-                boxShadow: [
-                  BoxShadow(blurRadius: 12, offset: Offset(0, 4), color: Colors.black26),
-                ],
+            // ── TOP: logo + title + subtitle ─────────────────────
+            const SizedBox(height: 48),
+            Center(
+              child: Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primaryColorBlack.withOpacity(0.18),
+                      blurRadius: 20,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: Image.asset(
+                  'assets/images/logo.jpeg',
+                  fit: BoxFit.cover,
+                ),
               ),
-              alignment: Alignment.center,
-              child: const Icon(Icons.verified_user, color: Colors.white, size: 28),
             ),
             const SizedBox(height: 16),
-            Text(
-              _emailStep ? 'Verify your email' : 'Complete your profile',
-              style: displayHeading(context),
+            Center(
+              child: Text(
+                _emailStep ? 'Verify your email' : 'Complete your profile',
+                style: displayHeading(context),
+              ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              _emailStep
-                  ? 'Enter the 6-digit code sent to ${_emailCtrl.text}. In development, check the user-service console.'
-                  : 'Display name, full name, and email. We’ll send a code to verify your email.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+            const SizedBox(height: 6),
+            Center(
+              child: Text(
+                _emailStep
+                    ? 'Enter the 6-digit code sent to ${_emailCtrl.text}.'
+                    : 'Add your display name, full name, and email.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+              ),
             ),
-            const SizedBox(height: 24),
+
+            // ── MIDDLE gap ────────────────────────────────────────
+            const Spacer(),
+
+            // ── FORM ─────────────────────────────────────────────
             if (!_emailStep) _form(),
             if (_emailStep) _emailPanel(),
+
+            // ── BOTTOM gap ────────────────────────────────────────
+            const Spacer(),
           ],
         ),
       ),
@@ -158,30 +168,56 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
 
   Widget _form() {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         TextField(
           controller: _displayCtrl,
-          decoration: const InputDecoration(labelText: 'Display name'),
+          decoration: InputDecoration(
+            labelText: 'Display name',
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.primaryColorBlack, width: 1.5),
+            ),
+          ),
           textInputAction: TextInputAction.next,
         ),
         const SizedBox(height: 12),
         TextField(
           controller: _fullCtrl,
-          decoration: const InputDecoration(labelText: 'Full legal name'),
+          decoration: InputDecoration(
+            labelText: 'Full legal name',
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.primaryColorBlack, width: 1.5),
+            ),
+          ),
           textInputAction: TextInputAction.next,
         ),
         const SizedBox(height: 12),
         TextField(
           controller: _emailCtrl,
-          decoration: const InputDecoration(labelText: 'Email'),
+          decoration: InputDecoration(
+            labelText: 'Email',
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.primaryColorBlack, width: 1.5),
+            ),
+          ),
           keyboardType: TextInputType.emailAddress,
         ),
         if (_error != null) _err(),
         const SizedBox(height: 16),
         FilledButton(
           onPressed: _busy ? null : _submitForm,
-          style: FilledButton.styleFrom(backgroundColor: AppColors.gambianGreen),
+          style: FilledButton.styleFrom(
+            backgroundColor: AppColors.primaryColorBlack,
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
           child: Text(_busy ? 'Saving…' : 'Continue'),
         ),
       ],
@@ -190,6 +226,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
 
   Widget _emailPanel() {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         TextField(
@@ -197,7 +234,15 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
           keyboardType: TextInputType.number,
           maxLength: 6,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          decoration: const InputDecoration(labelText: 'Email code', counterText: ''),
+          decoration: InputDecoration(
+            labelText: 'Email code',
+            counterText: '',
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.primaryColorBlack, width: 1.5),
+            ),
+          ),
           style: const TextStyle(letterSpacing: 6, fontSize: 18),
           onChanged: (_) => setState(() {}),
         ),
@@ -205,15 +250,16 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
         const SizedBox(height: 16),
         FilledButton(
           onPressed: _busy || _codeCtrl.text.length != 6 ? null : _verifyEmail,
-          style: FilledButton.styleFrom(backgroundColor: AppColors.gambianBlue),
+          style: FilledButton.styleFrom(
+            backgroundColor: AppColors.primaryColorBlack,
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
           child: Text(_busy ? 'Verifying…' : 'Verify and continue'),
         ),
         TextButton(onPressed: _busy ? null : _resend, child: const Text('Resend code')),
         TextButton(
-          onPressed: () => setState(() {
-            _emailStep = false;
-            _error = null;
-          }),
+          onPressed: () => setState(() { _emailStep = false; _error = null; }),
           child: const Text('Edit profile details'),
         ),
       ],

@@ -22,6 +22,7 @@ class TransactionsScreen extends StatefulWidget {
 class _TransactionsScreenState extends State<TransactionsScreen> {
   List<TransactionListItem> _items = [];
   String? _loadErr;
+  bool _loading = true;
   int _activeTab = 0;
 
   @override
@@ -34,15 +35,22 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     final auth = context.read<AuthController>();
     final t = auth.token;
     final u = auth.user;
-    if (t == null || u == null) return;
+    if (t == null || u == null) {
+      if (mounted) setState(() => _loading = false);
+      return;
+    }
+    setState(() => _loading = true);
     try {
       final res = await listTransactionsForParty(t, u.id);
+      if (!mounted) return;
       setState(() {
         _items = res.items;
         _loadErr = null;
       });
     } catch (e) {
-      setState(() => _loadErr = errorMessage(e));
+      if (mounted) setState(() => _loadErr = errorMessage(e));
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -113,7 +121,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     ];
 
     return RefreshIndicator(
-      color: AppColors.gambianBlue,
+      color: AppColors.primaryColorBlack,
       onRefresh: _load,
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
@@ -139,31 +147,31 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                   label: 'Links',
                   value: publicCount,
                   icon: Icons.link_rounded,
-                  tone: AppColors.gambianBlue,
+                  tone: AppColors.primaryColorBlack,
                 ),
                 const SizedBox(width: 10),
                 _StatPill(
                   label: 'Escrow',
                   value: escrowCount,
                   icon: Icons.shield_outlined,
-                  tone: AppColors.gambianBlue,
+                  tone: AppColors.primaryColorBlack,
                 ),
-                const SizedBox(width: 10),
-                _StatPill(
-                  label: 'Held',
-                  value: inEscrowCount,
-                  icon: Icons.lock_outline_rounded,
-                  tone: AppColors.gambianEarth,
-                ),
+                // const SizedBox(width: 10),
+                // _StatPill(
+                //   label: 'Held',
+                //   value: inEscrowCount,
+                //   icon: Icons.lock_outline_rounded,
+                //   tone: AppColors.gambianEarth,
+                // ),
               ],
             ),
           ),
           const SizedBox(height: 16),
-          _TransactionTabRail(
-            tabs: tabs,
-            activeIndex: _activeTab,
-            onChanged: (index) => setState(() => _activeTab = index),
-          ),
+          // _TransactionTabRail(
+          //   tabs: tabs,
+          //   activeIndex: _activeTab,
+          //   onChanged: (index) => setState(() => _activeTab = index),
+          // ),
           const SizedBox(height: 16),
           if (_loadErr != null)
             Container(
@@ -178,7 +186,9 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                 style: TextStyle(color: Colors.red.shade800),
               ),
             ),
-          if (filtered.isEmpty && _loadErr == null)
+          if (_loading && filtered.isEmpty && _loadErr == null)
+            const _TransactionsLoading()
+          else if (filtered.isEmpty && _loadErr == null)
             _EmptyTransactions(activeTab: _activeTab)
           else
             ...List.generate(filtered.length, (i) {
@@ -259,7 +269,7 @@ class _HeaderPanel extends StatelessWidget {
                 ),
                 child: const Icon(
                   Icons.swap_horiz_rounded,
-                  color: AppColors.gambianBlue,
+                  color: AppColors.primaryColorBlack,
                 ),
               ),
               const SizedBox(width: 12),
@@ -281,7 +291,7 @@ class _HeaderPanel extends StatelessWidget {
           FilledButton.icon(
             onPressed: onCreate,
             style: FilledButton.styleFrom(
-              backgroundColor: AppColors.gambianBlue,
+              backgroundColor: AppColors.primaryColorBlack,
               padding: const EdgeInsets.symmetric(vertical: 13),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),
@@ -346,7 +356,7 @@ class _TransactionTabRail extends StatelessWidget {
                   horizontal: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: active ? AppColors.gambianBlue : Colors.transparent,
+                  color: active ? AppColors.primaryColorBlack : Colors.transparent,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(
@@ -390,6 +400,65 @@ class _TransactionTabRail extends StatelessWidget {
   }
 }
 
+// class _StatPill extends StatelessWidget {
+//   const _StatPill({
+//     required this.label,
+//     required this.value,
+//     required this.icon,
+//     this.tone,
+//   });
+
+//   final String label;
+//   final int value;
+//   final IconData icon;
+//   final Color? tone;
+
+//   @override
+//   Widget build(BuildContext context) {
+//     final color = tone ?? AppColors.primaryColorBlack;
+//     return Container(
+//       width: 124,
+//       padding: const EdgeInsets.all(12),
+//       decoration: BoxDecoration(
+//         color: Colors.white,
+//         borderRadius: BorderRadius.circular(16),
+//         border: Border.all(color: const Color(0xFFE8EBF2)),
+//       ),
+//       child: Row(
+//         children: [
+//           Container(
+//             height: 75,
+//             width: 100,
+//             decoration: BoxDecoration(
+//               color: color.withValues(alpha: 0.09),
+//               borderRadius: BorderRadius.circular(11),
+//             ),
+//             child: Icon(icon, size: 18, color: color),
+//           ),
+//           const SizedBox(width: 10),
+//           Expanded(
+//             child: Column(
+//               crossAxisAlignment: CrossAxisAlignment.start,
+//               children: [
+//                 Text(
+//                   label,
+//                   style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+//                 ),
+//                 Text(
+//                   '$value',
+//                   style: const TextStyle(
+//                     fontWeight: FontWeight.w900,
+//                     fontSize: 17,
+//                   ),
+//                 ),
+//               ],
+//             ),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+// }
 class _StatPill extends StatelessWidget {
   const _StatPill({
     required this.label,
@@ -405,10 +474,10 @@ class _StatPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = tone ?? AppColors.gambianBlue;
+    final color = tone ?? AppColors.primaryColorBlack;
     return Container(
-      width: 124,
-      padding: const EdgeInsets.all(12),
+      width: 160,
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -417,13 +486,13 @@ class _StatPill extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            height: 34,
-            width: 34,
+            height: 44,
+            width: 44,
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.09),
               borderRadius: BorderRadius.circular(11),
             ),
-            child: Icon(icon, size: 18, color: color),
+            child: Icon(icon, size: 22, color: color),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -442,6 +511,43 @@ class _StatPill extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TransactionsLoading extends StatelessWidget {
+  const _TransactionsLoading();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 34),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE8EBF2)),
+      ),
+      child: Column(
+        children: [
+          SizedBox(
+            height: 34,
+            width: 34,
+            child: CircularProgressIndicator(
+              strokeWidth: 3,
+              color: AppColors.primaryColorBlack,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Loading transactions...',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.grey.shade700,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],
@@ -481,7 +587,7 @@ class _EmptyTransactions extends StatelessWidget {
             ),
             child: const Icon(
               Icons.receipt_long_rounded,
-              color: AppColors.gambianBlue,
+              color: AppColors.primaryColorBlack,
             ),
           ),
           const SizedBox(height: 14),
@@ -590,7 +696,7 @@ class _EmptyTransactions extends StatelessWidget {
 //     final filtered = _filteredItems();
 
 //     return RefreshIndicator(
-//       color: AppColors.gambianBlue,
+//       color: AppColors.primaryColorBlack,
 //       onRefresh: _load,
 //       child: ListView(
 //         physics: const AlwaysScrollableScrollPhysics(),
@@ -672,7 +778,7 @@ class _EmptyTransactions extends StatelessWidget {
 //     return Container(
 //       padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
 //       decoration: const BoxDecoration(
-//         color: AppColors.gambianBlue,
+//         color: AppColors.primaryColorBlack,
 //         borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
 //       ),
 //       child: SafeArea(
@@ -705,7 +811,7 @@ class _EmptyTransactions extends StatelessWidget {
 //                 onPressed: onCreate,
 //                 style: FilledButton.styleFrom(
 //                   backgroundColor: Colors.white,
-//                   foregroundColor: AppColors.gambianBlue,
+//                   foregroundColor: AppColors.primaryColorBlack,
 //                   padding: const EdgeInsets.symmetric(vertical: 14),
 //                   shape: RoundedRectangleBorder(
 //                     borderRadius: BorderRadius.circular(14),
@@ -747,7 +853,7 @@ class _EmptyTransactions extends StatelessWidget {
 //       children: [
 //         _StatCard(label: 'All', value: total, icon: Icons.receipt_long_rounded),
 //         const SizedBox(width: 10),
-//         _StatCard(label: 'Links', value: links, icon: Icons.link_rounded, accent: AppColors.gambianBlue),
+//         _StatCard(label: 'Links', value: links, icon: Icons.link_rounded, accent: AppColors.primaryColorBlack),
 //         const SizedBox(width: 10),
 //         _StatCard(label: 'Escrow', value: escrow, icon: Icons.shield_outlined, accent: AppColors.gambianEarth),
 //         const SizedBox(width: 10),
@@ -867,7 +973,7 @@ class _EmptyTransactions extends StatelessWidget {
 //                     Icon(
 //                       _icons[i],
 //                       size: 15,
-//                       color: active ? AppColors.gambianBlue : Colors.grey.shade500,
+//                       color: active ? AppColors.primaryColorBlack : Colors.grey.shade500,
 //                     ),
 //                     const SizedBox(width: 6),
 //                     Text(
@@ -875,7 +981,7 @@ class _EmptyTransactions extends StatelessWidget {
 //                       style: TextStyle(
 //                         fontSize: 12,
 //                         fontWeight: FontWeight.w800,
-//                         color: active ? AppColors.gambianBlue : Colors.grey.shade600,
+//                         color: active ? AppColors.primaryColorBlack : Colors.grey.shade600,
 //                       ),
 //                     ),
 //                     if (counts[i] > 0) ...[
@@ -884,7 +990,7 @@ class _EmptyTransactions extends StatelessWidget {
 //                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
 //                         decoration: BoxDecoration(
 //                           color: active
-//                               ? AppColors.gambianBlue.withValues(alpha: 0.1)
+//                               ? AppColors.primaryColorBlack.withValues(alpha: 0.1)
 //                               : Colors.grey.shade200,
 //                           borderRadius: BorderRadius.circular(999),
 //                         ),
@@ -893,7 +999,7 @@ class _EmptyTransactions extends StatelessWidget {
 //                           style: TextStyle(
 //                             fontSize: 10,
 //                             fontWeight: FontWeight.w900,
-//                             color: active ? AppColors.gambianBlue : Colors.grey.shade600,
+//                             color: active ? AppColors.primaryColorBlack : Colors.grey.shade600,
 //                           ),
 //                         ),
 //                       ),
@@ -936,10 +1042,10 @@ class _EmptyTransactions extends StatelessWidget {
 //             width: 52,
 //             height: 52,
 //             decoration: BoxDecoration(
-//               color: AppColors.gambianBlue.withValues(alpha: 0.08),
+//               color: AppColors.primaryColorBlack.withValues(alpha: 0.08),
 //               borderRadius: BorderRadius.circular(16),
 //             ),
-//             child: const Icon(Icons.receipt_long_rounded, color: AppColors.gambianBlue),
+//             child: const Icon(Icons.receipt_long_rounded, color: AppColors.primaryColorBlack),
 //           ),
 //           const SizedBox(height: 14),
 //           Text(

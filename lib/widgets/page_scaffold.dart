@@ -22,19 +22,21 @@ class AuthPageScaffold extends StatelessWidget {
             decoration: BoxDecoration(gradient: AppColors.pageBackground),
             child: SizedBox.expand(),
           ),
-          const PatternBackground(opacity: 0.4),
+          const PatternBackground(opacity: 0.15),
           SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-              child: Column(
-                children: [
-                  child,
-                  if (bottom != null) ...[
-                    const SizedBox(height: 24),
-                    bottom!,
-                  ],
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(child: child),
+                if (bottom != null) ...[
+                  const SizedBox(height: 24),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: bottom!,
+                  ),
+                  const SizedBox(height: 16),
                 ],
-              ),
+              ],
             ),
           ),
         ],

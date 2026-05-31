@@ -27,7 +27,7 @@ class _PatternPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final red = Paint()..color = AppColors.gambianRed.withOpacity(opacity);
-    final blue = Paint()..color = AppColors.gambianBlue.withOpacity(opacity);
+    final blue = Paint()..color = AppColors.primaryColorBlack.withOpacity(opacity);
     const step = 20.0;
     for (double y = 0; y < size.height; y += step) {
       for (double x = 0; x < size.width; x += step) {

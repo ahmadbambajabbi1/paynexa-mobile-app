@@ -117,7 +117,7 @@ class _WorkspaceShellScreenState extends State<WorkspaceShellScreen> {
           border: Border(right: BorderSide(color: Colors.grey.shade200)),
           boxShadow: [
             BoxShadow(
-              color: AppColors.gambianBlue.withOpacity(0.08),
+              color: AppColors.primaryColorBlack.withOpacity(0.08),
               offset: const Offset(4, 0),
               blurRadius: 24,
             ),
@@ -212,7 +212,7 @@ class _WorkspaceShellScreenState extends State<WorkspaceShellScreen> {
               return Padding(
                 padding: const EdgeInsets.only(bottom: 4),
                 child: Material(
-                  color: selected ? AppColors.gambianBlue.withOpacity(0.1) : Colors.transparent,
+                  color: selected ? AppColors.primaryColorBlack.withOpacity(0.1) : Colors.transparent,
                   borderRadius: BorderRadius.circular(12),
                   child: InkWell(
                     borderRadius: BorderRadius.circular(12),
@@ -229,7 +229,7 @@ class _WorkspaceShellScreenState extends State<WorkspaceShellScreen> {
                             height: 36,
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(10),
-                              color: selected ? AppColors.gambianBlue : Colors.grey.shade100,
+                              color: selected ? AppColors.primaryColorBlack : Colors.grey.shade100,
                             ),
                             child: Icon(
                               selected ? d.selectedIcon : d.icon,
@@ -244,7 +244,7 @@ class _WorkspaceShellScreenState extends State<WorkspaceShellScreen> {
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
-                                color: selected ? AppColors.gambianBlue : Colors.grey.shade700,
+                                color: selected ? AppColors.primaryColorBlack : Colors.grey.shade700,
                               ),
                             ),
                           ),

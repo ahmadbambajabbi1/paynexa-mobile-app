@@ -106,7 +106,7 @@
 //           FilledButton(
 //             onPressed: () => _openApplyFlow(context, user),
 //             style: FilledButton.styleFrom(
-//               backgroundColor: AppColors.gambianBlue,
+//               backgroundColor: AppColors.primaryColorBlack,
 //               foregroundColor: Colors.white,
 //               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
 //               minimumSize: Size.zero,
@@ -233,7 +233,7 @@
 //                             FilledButton(
 //                               onPressed: () => _openApplyFlow(context, user),
 //                               style: FilledButton.styleFrom(
-//                                 backgroundColor: AppColors.gambianBlue,
+//                                 backgroundColor: AppColors.primaryColorBlack,
 //                                 foregroundColor: Colors.white,
 //                                 padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
 //                                 minimumSize: Size.zero,
@@ -489,7 +489,7 @@ class ProfileScreen extends StatelessWidget {
       backgroundColor: AppColors.pageGradientStart,
       body: RefreshIndicator(
         onRefresh: () => context.read<AuthController>().refreshUser(),
-        color: AppColors.gambianBlue,
+        color: AppColors.primaryColorBlack,
         backgroundColor: Colors.white,
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -497,7 +497,7 @@ class ProfileScreen extends StatelessWidget {
             // Profile Header
             SliverToBoxAdapter(
               child: Container(
-                color: AppColors.gambianBlue,
+                color: AppColors.primaryColorBlack,
                 child: SafeArea(
                   bottom: false,
                   child: Padding(
@@ -582,7 +582,7 @@ class ProfileScreen extends StatelessWidget {
                               label: const Text('Apply for Professional'),
                               style: FilledButton.styleFrom(
                                 backgroundColor: Colors.white,
-                                foregroundColor: AppColors.gambianBlue,
+                                foregroundColor: AppColors.primaryColorBlack,
                                 padding: const EdgeInsets.symmetric(vertical: 12),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                               ),
@@ -655,14 +655,14 @@ class ProfileScreen extends StatelessWidget {
                         ],
                         const SizedBox(height: 16),
                         // Wallet Link
-                        _WalletTile(
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute<void>(builder: (_) => const BillingsScreen()),
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 12),
+                        // _WalletTile(
+                        //   onTap: () {
+                        //     Navigator.of(context).push(
+                        //       MaterialPageRoute<void>(builder: (_) => const BillingsScreen()),
+                        //     );
+                        //   },
+                        // ),
+                        // const SizedBox(height: 12),
                         const _SignOutSection(),
                       ],
                     ),
@@ -760,10 +760,10 @@ class _RoleOption extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: AppColors.gambianBlue.withOpacity(0.1),
+                color: AppColors.primaryColorBlack.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(icon, color: AppColors.gambianBlue),
+              child: Icon(icon, color: AppColors.primaryColorBlack),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -1017,10 +1017,10 @@ class _WalletTile extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppColors.gambianBlue.withOpacity(0.08),
+                color: AppColors.primaryColorBlack.withOpacity(0.08),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(Icons.account_balance_wallet_outlined, color: AppColors.gambianBlue),
+              child: const Icon(Icons.account_balance_wallet_outlined, color: AppColors.primaryColorBlack),
             ),
             const SizedBox(width: 14),
             Expanded(
