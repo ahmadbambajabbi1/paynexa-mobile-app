@@ -3,10 +3,11 @@ import 'package:provider/provider.dart';
 
 import '../api/api_error.dart';
 import '../api/transactions_api.dart';
+import '../api/escrow_api.dart' as escrow_api;
 import '../auth/auth_controller.dart';
-import '../config/constants.dart';
 import '../models/transaction_models.dart';
 import '../theme/app_colors.dart';
+import '../utils/currency.dart';
 import '../widgets/transaction_payment_sheet.dart';
 import 'transaction_detail_screen.dart';
 
@@ -24,11 +25,29 @@ class _PublicCheckoutScreenState extends State<PublicCheckoutScreen> {
   bool _loading = true;
   bool _busy = false;
   String? _err;
+  String? _walletCurrency;
 
   @override
   void initState() {
     super.initState();
     _load();
+    _loadWalletCurrency();
+  }
+
+  Future<void> _loadWalletCurrency() async {
+    final token = context.read<AuthController>().token;
+    if (token == null || token.isEmpty) {
+      setState(() => _walletCurrency = null);
+      return;
+    }
+    try {
+      final wallet = await escrow_api.getWallet(token);
+      if (!mounted) return;
+      setState(() => _walletCurrency = wallet.currency);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _walletCurrency = null);
+    }
   }
 
   Future<void> _load() async {
@@ -205,11 +224,11 @@ class _PublicCheckoutScreenState extends State<PublicCheckoutScreen> {
         children: [
           _row('Status', _formatStatus(s.status)),
           _row('Quantity', '${s.quantity}'),
-          _row('Unit price', '$kCurrencyPrefix${s.unitPrice}'),
-          _row('Subtotal', '$kCurrencyPrefix${s.amount}'),
-          _row('Protection fee', '$kCurrencyPrefix${s.protectionFee}'),
+          _row('Unit price', moneyText(s.unitPrice, _walletCurrency)),
+          _row('Subtotal', moneyText(s.amount, _walletCurrency)),
+          _row('Protection fee', moneyText(s.protectionFee, _walletCurrency)),
           const Divider(height: 20),
-          _row('Total', '$kCurrencyPrefix${s.totalBuyerPays}', strong: true),
+          _row('Total', moneyText(s.totalBuyerPays, _walletCurrency), strong: true),
         ],
       ),
     );

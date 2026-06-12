@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../api/api_error.dart';
+import '../api/escrow_api.dart';
 import '../api/transactions_api.dart';
 import '../auth/auth_controller.dart';
 import '../models/transaction_models.dart';
+import '../models/wallet_models.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 import '../widgets/create_transaction_sheet.dart';
@@ -22,6 +24,7 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   List<TransactionListItem> _items = [];
   String? _loadErr;
+  String? _walletCurrency;
 
   @override
   void initState() {
@@ -35,9 +38,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final u = auth.user;
     if (t == null || u == null) return;
     try {
-      final res = await listTransactionsForParty(t, u.id);
+      final results = await Future.wait<Object>([
+        listTransactionsForParty(t, u.id),
+        getWallet(t),
+      ]);
+      final res = results[0] as TransactionListResponse;
+      final wallet = results[1] as WalletSummary;
       setState(() {
         _items = res.items;
+        _walletCurrency = wallet.currency;
         _loadErr = null;
       });
     } catch (e) {
@@ -199,6 +208,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       TransactionListTileCard(
                         row: row,
                         selfUserId: userId,
+                        currency: _walletCurrency,
                         onTap: () {
                           Navigator.of(context).push(
                             MaterialPageRoute<void>(

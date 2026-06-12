@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/product_models.dart';
 import '../theme/app_colors.dart';
+import '../utils/currency.dart';
 import 'product_image_lightbox.dart';
 
 List<String> _collectProductImageUrls(ProductRow product) {
@@ -41,9 +42,14 @@ void _openProductImage(BuildContext context, ProductRow product, String url) {
 
 /// Product banner, gallery, description, price, and dynamic type attributes (read-only).
 class TransactionRoomProductSection extends StatelessWidget {
-  const TransactionRoomProductSection({super.key, required this.product});
+  const TransactionRoomProductSection({
+    super.key,
+    required this.product,
+    this.currency,
+  });
 
   final ProductRow product;
+  final String? currency;
 
   @override
   Widget build(BuildContext context) {
@@ -54,7 +60,7 @@ class TransactionRoomProductSection extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(18),
-        side: BorderSide(color: Colors.blue.shade100),
+        side: const BorderSide(color: Color(0xFFE8EBF2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -63,8 +69,10 @@ class TransactionRoomProductSection extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 13),
             decoration: BoxDecoration(
-              color: Colors.blue.shade50,
-              border: Border(bottom: BorderSide(color: Colors.blue.shade100)),
+              color: Colors.white,
+              border: const Border(
+                bottom: BorderSide(color: Color(0xFFE8EBF2)),
+              ),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -120,46 +128,67 @@ class TransactionRoomProductSection extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade50,
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: Colors.grey.shade200),
-                        ),
-                        child: Text(
-                          product.description,
-                          style: TextStyle(
-                            fontSize: 14,
-                            height: 1.35,
-                            color: Colors.grey.shade800,
-                          ),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFFE8EBF2)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Description',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.grey.shade600,
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 10),
-                    Container(
-                      width: 118,
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.blue.shade50,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: Colors.blue.shade100),
+                      const SizedBox(height: 6),
+                      Text(
+                        product.description,
+                        style: TextStyle(
+                          fontSize: 14,
+                          height: 1.4,
+                          color: Colors.grey.shade800,
+                        ),
                       ),
-                      child: Text(
-                        'D${product.price}',
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFFE8EBF2)),
+                  ),
+                  child: Row(
+                    children: [
+                      Text(
+                        'Price',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        moneyText(product.price, currency),
                         style: const TextStyle(
-                          fontSize: 18,
+                          fontSize: 19,
                           fontWeight: FontWeight.w900,
                           color: AppColors.primaryColorBlack,
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
                 if (gallery.isNotEmpty) ...[
                   const SizedBox(height: 16),
@@ -223,8 +252,8 @@ class TransactionRoomProductSection extends StatelessWidget {
                         width: double.infinity,
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          border: Border.all(color: Colors.blue.shade100),
-                          color: Colors.blue.shade50.withValues(alpha: 0.45),
+                          border: Border.all(color: const Color(0xFFE8EBF2)),
+                          color: const Color(0xFFF8FAFC),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Column(

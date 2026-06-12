@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "713673097941",
+    "project_id": "paynexa-fc9ca",
+    "storage_bucket": "paynexa-fc9ca.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:713673097941:android:e6be323757e71ff308585c",
+        "android_client_info": {
+          "package_name": "com.paynexa.paynexa"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB44S8he3U2wf97enCrAVRg3PnWjpI2WyI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

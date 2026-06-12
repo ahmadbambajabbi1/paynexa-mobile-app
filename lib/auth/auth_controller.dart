@@ -7,6 +7,7 @@ import '../api/api_error.dart';
 import '../api/users_api.dart';
 import '../config/constants.dart';
 import '../models/me_user.dart';
+import '../push/push_notifications_service.dart';
 
 /// Session + profile state aligned with [escrow_web/src/lib/auth/auth-context.tsx].
 class AuthController extends ChangeNotifier {
@@ -36,6 +37,7 @@ class AuthController extends ChangeNotifier {
         final me = await fetchMe(_token!);
         _user = me.user;
         _startUserSync();
+        unawaited(PushNotificationsService.instance.syncToken(_token!));
       } else {
         _user = null;
         _stopUserSync();
@@ -74,6 +76,7 @@ class AuthController extends ChangeNotifier {
       }
       final me = await fetchMe(accessToken);
       _user = me.user;
+      unawaited(PushNotificationsService.instance.syncToken(accessToken));
     } catch (_) {
       await _secure.delete(key: kStorageAccessToken);
       _token = null;

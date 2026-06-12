@@ -10,15 +10,15 @@
 	<array>
 		<dict>
 			<key>CFBundleURLName</key>
-			<string>com.safetrade.escrow</string>
+			<string>com.paynexa.paynexa</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>safetrade</string>
+				<string>paynexa</string>
 			</array>
 		</dict>
 	</array>
 	<key>CFBundleDisplayName</key>
-	<string>Escrow App</string>
+	<string>Paynexa</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -26,7 +26,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>escrow_app</string>
+	<string>paynexa</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>

@@ -1,6 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <application
-        android:label="escrow_app"
+        android:label="Paynexa"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
@@ -44,6 +45,9 @@
                 <data
                     android:scheme="safetrade"
                     android:host="transactions" />
+                <data
+                    android:scheme="safetrade"
+                    android:host="stripe-redirect" />
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.
@@ -51,6 +55,9 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="paynexa_transactions" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

@@ -111,6 +111,25 @@ Future<Map<String, dynamic>> createStripeDepositIntent(
   return raw;
 }
 
+Future<Map<String, dynamic>> confirmSavedCardStripeDeposit(
+  String token, {
+  required double amount,
+  required String paymentMethodId,
+  String? clientRequestId,
+}) async {
+  final raw = await apiFetch(
+    '/escrow/wallet/deposits/stripe/confirm-saved-card',
+    method: 'POST',
+    token: token,
+    body: {
+      'amount': amount,
+      'paymentMethodId': paymentMethodId,
+      'clientRequestId': clientRequestId,
+    },
+  ) as Map<String, dynamic>;
+  return raw;
+}
+
 Future<Map<String, dynamic>> createModernPayDepositIntent(
   String token, {
   required double amount,

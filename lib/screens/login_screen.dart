@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl_phone_field/countries.dart' as phone_countries;
 import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:intl_phone_field/phone_number.dart';
 import 'package:provider/provider.dart';
 
 import '../api/api_error.dart';
+import '../api/countries_api.dart';
 import '../api/users_api.dart';
 import '../auth/auth_controller.dart';
 import '../data/device_id_service.dart';
@@ -31,6 +33,40 @@ class _LoginScreenState extends State<LoginScreen> {
   String? _preAuthToken;
   String? _error;
   bool _busy = false;
+  bool _loadingCountries = true;
+  String? _countryLoadError;
+  List<OperatingCountry> _operatingCountries = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadOperatingCountries();
+  }
+
+  Future<void> _loadOperatingCountries() async {
+    setState(() {
+      _loadingCountries = true;
+      _countryLoadError = null;
+    });
+    try {
+      final countries = await listOperatingCountries();
+      if (!mounted) return;
+      setState(() {
+        _operatingCountries = countries;
+        _countryIso2 = countries.isNotEmpty ? countries.first.iso2 : '';
+        _countryLoadError = countries.isEmpty ? 'No operating countries are configured.' : null;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _operatingCountries = const [];
+        _countryIso2 = '';
+        _countryLoadError = 'Operating countries are unavailable.';
+      });
+    } finally {
+      if (mounted) setState(() => _loadingCountries = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -49,12 +85,16 @@ class _LoginScreenState extends State<LoginScreen> {
 
   bool _phoneOk() {
     final e = _e164().trim();
-    return RegExp(r'^\+\d{8,15}$').hasMatch(e);
+    return _operatingCountries.isNotEmpty && RegExp(r'^\+\d{8,15}$').hasMatch(e);
   }
 
   Future<void> _sendCode() async {
     setState(() { _error = null; _busy = true; });
     try {
+      if (_operatingCountries.isEmpty) {
+        setState(() => _error = _countryLoadError ?? 'No operating countries are configured.');
+        return;
+      }
       await phoneSendCode(_e164().trim(), _countryIso2);
       setState(() => _step = _LoginStep.code);
     } catch (e) {
@@ -292,12 +332,61 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildPhone() {
+    final allowedPhoneCountries = phone_countries.countries
+        .where((country) => _operatingCountries.any((op) => op.iso2 == country.code))
+        .toList(growable: false);
+
+    if (_loadingCountries || allowedPhoneCountries.isEmpty) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.shade300),
+              color: Colors.white,
+            ),
+            child: Text(
+              _loadingCountries
+                  ? 'Loading operating countries...'
+                  : (_countryLoadError ?? 'No operating countries are configured.'),
+              style: TextStyle(
+                color: _loadingCountries ? Colors.grey.shade700 : Colors.red.shade700,
+                fontSize: 14,
+              ),
+            ),
+          ),
+          if (_countryLoadError != null && !_loadingCountries) ...[
+            const SizedBox(height: 12),
+            OutlinedButton(
+              onPressed: _loadOperatingCountries,
+              child: const Text('Try again'),
+            ),
+          ],
+          const SizedBox(height: 16),
+          FilledButton(
+            onPressed: null,
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.primaryColorBlack,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: Text(_loadingCountries ? 'Loading countries...' : 'Send SMS code'),
+          ),
+        ],
+      );
+    }
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         IntlPhoneField(
-          initialCountryCode: 'GM',
+          key: ValueKey(_countryIso2),
+          countries: allowedPhoneCountries,
+          initialCountryCode: _countryIso2,
           decoration: InputDecoration(
             labelText: 'Phone number',
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),

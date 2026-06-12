@@ -1,0 +1,34 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "paynexa-fc9ca",
+          "appId": "1:713673097941:android:e6be323757e71ff308585c",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "ios": {
+        "default": {
+          "projectId": "paynexa-fc9ca",
+          "appId": "1:713673097941:ios:a45c28ceeb4268dd08585c"
+        }
+      },
+      "web": {
+        "default": {
+          "projectId": "paynexa-fc9ca",
+          "appId": "1:713673097941:web:9f5dfc71354644fd08585c"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "paynexa-fc9ca",
+          "configurations": {
+            "android": "1:713673097941:android:e6be323757e71ff308585c",
+            "ios": "1:713673097941:ios:a45c28ceeb4268dd08585c"
+          }
+        }
+      }
+    }
+  }
+}

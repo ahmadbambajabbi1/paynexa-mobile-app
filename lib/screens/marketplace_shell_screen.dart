@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../config/constants.dart';
 import '../theme/app_colors.dart';
@@ -32,56 +33,78 @@ class _MarketplaceShellScreenState extends State<MarketplaceShellScreen> {
       _ => const TransactionsScreen(),
     };
 
+    final overlayStyle = switch (_index) {
+      2 => const SystemUiOverlayStyle(
+        statusBarColor: AppColors.primaryColorBlack,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+        systemNavigationBarColor: AppColors.primaryColorBlack,
+        systemNavigationBarIconBrightness: Brightness.light,
+      ),
+      _ => const SystemUiOverlayStyle(
+        statusBarColor: Colors.white,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
+        systemNavigationBarColor: AppColors.primaryColorBlack,
+        systemNavigationBarIconBrightness: Brightness.light,
+      ),
+    };
+
+    final bodyWithTopPolicy = _index == 1 ? SafeArea(child: body) : body;
+
     return Scaffold(
       // appBar:
-          // _index == 0
-          // ? null
-          // :
-          // AppBar(
-          //   title: Text.rich(
-          //     TextSpan(
-          //       children: [
-          //         TextSpan(
-          //           text: kAppName,
-          //           style: TextStyle(
-          //             fontSize: 17,
-          //             letterSpacing: -0.35,
-          //             fontWeight: FontWeight.w700,
-          //             color: Colors.grey.shade900,
-          //             decoration: TextDecoration.none,
-          //           ),
-          //         ),
-          //         TextSpan(
-          //           text: ' $kAppNameRegion',
-          //           style: const TextStyle(
-          //             fontSize: 17,
-          //             fontWeight: FontWeight.w800,
-          //             letterSpacing: 0.2,
-          //             color: AppColors.primaryColorBlack,
-          //             decoration: TextDecoration.none,
-          //           ),
-          //         ),
-          //       ],
-          //     ),
-          //     maxLines: 1,
-          //     overflow: TextOverflow.ellipsis,
-          //     textAlign: TextAlign.center,
-          //   ),
-          //   actions: [
-          //     IconButton(
-          //       tooltip: 'Notifications',
-          //       onPressed: () {
-          //         Navigator.of(context).push(
-          //           MaterialPageRoute<void>(
-          //             builder: (_) => const NotificationsScreen(),
-          //           ),
-          //         );
-          //       },
-          //       icon: const Icon(Icons.notifications_outlined),
-          //     ),
-          //   ],
-          // ),
-      body: SafeArea(child: body),
+      // _index == 0
+      // ? null
+      // :
+      // AppBar(
+      //   title: Text.rich(
+      //     TextSpan(
+      //       children: [
+      //         TextSpan(
+      //           text: kAppName,
+      //           style: TextStyle(
+      //             fontSize: 17,
+      //             letterSpacing: -0.35,
+      //             fontWeight: FontWeight.w700,
+      //             color: Colors.grey.shade900,
+      //             decoration: TextDecoration.none,
+      //           ),
+      //         ),
+      //         TextSpan(
+      //           text: ' $kAppNameRegion',
+      //           style: const TextStyle(
+      //             fontSize: 17,
+      //             fontWeight: FontWeight.w800,
+      //             letterSpacing: 0.2,
+      //             color: AppColors.primaryColorBlack,
+      //             decoration: TextDecoration.none,
+      //           ),
+      //         ),
+      //       ],
+      //     ),
+      //     maxLines: 1,
+      //     overflow: TextOverflow.ellipsis,
+      //     textAlign: TextAlign.center,
+      //   ),
+      //   actions: [
+      //     IconButton(
+      //       tooltip: 'Notifications',
+      //       onPressed: () {
+      //         Navigator.of(context).push(
+      //           MaterialPageRoute<void>(
+      //             builder: (_) => const NotificationsScreen(),
+      //           ),
+      //         );
+      //       },
+      //       icon: const Icon(Icons.notifications_outlined),
+      //     ),
+      //   ],
+      // ),
+      body: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: overlayStyle,
+        child: bodyWithTopPolicy,
+      ),
       bottomNavigationBar: NavigationBarTheme(
         data: NavigationBarThemeData(
           iconTheme: WidgetStateProperty.resolveWith(

@@ -5,6 +5,7 @@ import 'package:app_links/app_links.dart';
 
 import 'auth/auth_controller.dart';
 import 'config/constants.dart';
+import 'push/push_notifications_service.dart';
 import 'screens/marketplace_shell_screen.dart';
 import 'screens/complete_profile_screen.dart';
 import 'screens/login_screen.dart';
@@ -65,7 +66,12 @@ class _RootRouterState extends State<RootRouter> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      unawaited(context.read<AuthController>().refreshUser());
+      final auth = context.read<AuthController>();
+      unawaited(auth.refreshUser());
+      final token = auth.token;
+      if (token != null) {
+        unawaited(PushNotificationsService.instance.syncToken(token));
+      }
     }
   }
 
@@ -107,6 +113,10 @@ class _RootRouterState extends State<RootRouter> with WidgetsBindingObserver {
         }
         if (!auth.profileReady) {
           return const CompleteProfileScreen();
+        }
+        final sessionToken = auth.token;
+        if (sessionToken != null) {
+          unawaited(PushNotificationsService.instance.syncToken(sessionToken));
         }
         return const MarketplaceShellScreen();
       },

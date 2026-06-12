@@ -2,12 +2,14 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../api/api_error.dart';
+import '../api/escrow_api.dart' as escrow_api;
 import '../api/products_api.dart';
 import '../api/transactions_api.dart';
 import '../api/users_api.dart';
 import '../config/constants.dart';
 import '../models/product_models.dart';
 import '../theme/app_colors.dart';
+import '../utils/currency.dart';
 
 Future<void> showCreateTransactionSheet({
   required BuildContext context,
@@ -46,6 +48,7 @@ class _CreateTransactionPageState extends State<CreateTransactionPage> {
   String _flow = 'public';
   bool _busy = false;
   String? _err;
+  String? _walletCurrency;
 
   // Escrow
   final _buyerCtrl = TextEditingController();
@@ -71,6 +74,7 @@ class _CreateTransactionPageState extends State<CreateTransactionPage> {
     _qtyCtrl.addListener(_onPublicCalcChanged);
     _priceCtrl.addListener(_onPublicCalcChanged);
     unawaited(_loadProducts());
+    unawaited(_loadWalletCurrency());
   }
 
   @override
@@ -89,6 +93,17 @@ class _CreateTransactionPageState extends State<CreateTransactionPage> {
   }
 
   void _onPublicCalcChanged() => setState(() {});
+
+  Future<void> _loadWalletCurrency() async {
+    try {
+      final wallet = await escrow_api.getWallet(widget.token);
+      if (!mounted) return;
+      setState(() => _walletCurrency = wallet.currency);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _walletCurrency = null);
+    }
+  }
 
   Future<void> _loadProducts() async {
     try {
@@ -190,49 +205,15 @@ class _CreateTransactionPageState extends State<CreateTransactionPage> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        // backgroundColor: AppColors.primaryColorBlack,
-        // foregroundColor: Colors.white,
         title: const Text(
           'New Transaction',
-          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17, ),
+          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17),
         ),
         elevation: 0,
         centerTitle: false,
       ),
       body: Column(
         children: [
-          // ── Flow switcher ──────────────────────────────────────
-          // Container(
-          //   color: AppColors.primaryColorBlack,
-          //   padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          //   child: Container(
-          //     padding: const EdgeInsets.all(4),
-          //     decoration: BoxDecoration(
-          //       color: Colors.white.withValues(alpha: 0.15),
-          //       borderRadius: BorderRadius.circular(16),
-          //     ),
-          //     // child: Row(
-          //     //   children: [
-          //     //     Expanded(
-          //     //       child: _flowButton(
-          //     //         label: 'Shareable Link',
-          //     //         icon: Icons.link_rounded,
-          //     //         isActive: _flow == 'public',
-          //     //         onTap: () => setState(() { _flow = 'public'; _err = null; }),
-          //     //       ),
-          //     //     ),
-          //     //     Expanded(
-          //     //       child: _flowButton(
-          //     //         label: 'Private Deal',
-          //     //         icon: Icons.people_outline_rounded,
-          //     //         isActive: _flow == 'escrow',
-          //     //         onTap: () => setState(() { _flow = 'escrow'; _err = null; }),
-          //     //       ),
-          //     //     ),
-          //     //   ],
-          //     // ),
-          //   ),
-          // ),
           Expanded(
             child: ListView(
               padding: const EdgeInsets.fromLTRB(20, 24, 20, 40),
@@ -247,47 +228,13 @@ class _CreateTransactionPageState extends State<CreateTransactionPage> {
     );
   }
 
-  Widget _flowButton({
-    required String label,
-    required IconData icon,
-    required bool isActive,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          color: isActive ? Colors.white : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 16, color: isActive ? AppColors.primaryColorBlack : Colors.white70),
-            const SizedBox(width: 7),
-            Text(
-              label,
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 13,
-                color: isActive ? AppColors.primaryColorBlack : Colors.white70,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   List<Widget> _buildPublicForm() {
     final qty = int.tryParse(_qtyCtrl.text.trim()) ?? 1;
     final price = double.tryParse(_priceCtrl.text.trim()) ?? 0.0;
     final total = qty * price;
 
     return [
-      // ── Section header ───────────────────────────────────────
+      // Header
       Row(
         children: [
           Container(
@@ -344,7 +291,7 @@ class _CreateTransactionPageState extends State<CreateTransactionPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _inputLabel('Unit Price (GMD)'),
+                _inputLabel(_unitPriceLabel()),
                 _inputField(_priceCtrl, '0.00', keyboardType: const TextInputType.numberWithOptions(decimal: true)),
               ],
             ),
@@ -353,21 +300,17 @@ class _CreateTransactionPageState extends State<CreateTransactionPage> {
       ),
       const SizedBox(height: 16),
 
-      // ── Delivery toggle ──────────────────────────────────────
+      // Delivery toggle
       GestureDetector(
         onTap: () => setState(() => _deliveryNeeded = !_deliveryNeeded),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: _deliveryNeeded
-                ? AppColors.primaryColorBlack.withValues(alpha: 0.05)
-                : Colors.white,
+            color: _deliveryNeeded ? AppColors.primaryColorBlack.withValues(alpha: 0.05) : Colors.white,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: _deliveryNeeded
-                  ? AppColors.primaryColorBlack.withValues(alpha: 0.3)
-                  : const Color(0xFFE8EBF2),
+              color: _deliveryNeeded ? AppColors.primaryColorBlack.withValues(alpha: 0.3) : const Color(0xFFE8EBF2),
             ),
           ),
           child: Row(
@@ -384,9 +327,7 @@ class _CreateTransactionPageState extends State<CreateTransactionPage> {
                     width: 1.5,
                   ),
                 ),
-                child: _deliveryNeeded
-                    ? const Icon(Icons.check_rounded, size: 14, color: Colors.white)
-                    : null,
+                child: _deliveryNeeded ? const Icon(Icons.check_rounded, size: 14, color: Colors.white) : null,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -420,20 +361,27 @@ class _CreateTransactionPageState extends State<CreateTransactionPage> {
       _inputField(_noteCtrl, 'Message shown to buyer on checkout...', minLines: 4, maxLines: 4),
       const SizedBox(height: 24),
 
-      // ── Summary ──────────────────────────────────────────────
+      // Summary card – white background, black text, primary color total
       Container(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: AppColors.primaryColorBlack,
+          color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.primaryColorBlack.withValues(alpha: 0.12)),
+          border: Border.all(color: AppColors.primaryColorBlack.withValues(alpha: 0.15)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Column(
           children: [
-            _summaryRow('Quantity', '$qty'),
-            _summaryRow('Unit price', '$kCurrencyPrefix${price.toStringAsFixed(2)}'),
-            const Divider(height: 20),
-            _summaryRow('Buyer Pays (Total)', '$kCurrencyPrefix${total.toStringAsFixed(2)}', strong: true),
+            _summaryRow('Quantity', '$qty', normalColor: Colors.grey.shade700),
+            _summaryRow('Unit price', moneyText(price, _walletCurrency), normalColor: Colors.grey.shade700),
+            const Divider(height: 20, color: Color(0xFFE8EBF2)),
+            _summaryRow('Buyer Pays (Total)', moneyText(total, _walletCurrency), strong: true),
           ],
         ),
       ),
@@ -466,7 +414,7 @@ class _CreateTransactionPageState extends State<CreateTransactionPage> {
     final fee = amount * kEscrowFeePercent / 100;
 
     return [
-      // ── Section header ───────────────────────────────────────
+      // Header
       Row(
         children: [
           Container(
@@ -573,20 +521,27 @@ class _CreateTransactionPageState extends State<CreateTransactionPage> {
       ],
       const SizedBox(height: 24),
 
-      // ── Summary ──────────────────────────────────────────────
+      // Summary card – white background, black text, primary color total
       Container(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: AppColors.primaryColorBlack.withValues(alpha: 0.04),
+          color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.primaryColorBlack.withValues(alpha: 0.12)),
+          border: Border.all(color: AppColors.primaryColorBlack.withValues(alpha: 0.15)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Column(
           children: [
-            _summaryRow('Product amount', '$kCurrencyPrefix${selected?.price ?? '0.00'}'),
-            _summaryRow('Escrow fee (${kEscrowFeePercent}%)', '$kCurrencyPrefix${fee.toStringAsFixed(2)}'),
-            const Divider(height: 20),
-            _summaryRow('Total protected', '$kCurrencyPrefix${(amount + fee).toStringAsFixed(2)}', strong: true),
+            _summaryRow('Product amount', moneyText(selected?.price ?? '0.00', _walletCurrency), normalColor: Colors.grey.shade700),
+            _summaryRow('Escrow fee (${kEscrowFeePercent}%)', moneyText(fee, _walletCurrency), normalColor: Colors.grey.shade700),
+            const Divider(height: 20, color: Color(0xFFE8EBF2)),
+            _summaryRow('Total protected', moneyText(amount + fee, _walletCurrency), strong: true),
           ],
         ),
       ),
@@ -608,6 +563,11 @@ class _CreateTransactionPageState extends State<CreateTransactionPage> {
         ),
       ),
     ];
+  }
+
+  String _unitPriceLabel() {
+    final symbol = currencySymbol(_walletCurrency);
+    return symbol.isEmpty ? 'Unit Price' : 'Unit Price ($symbol)';
   }
 
   Widget _inputLabel(String label) {
@@ -679,7 +639,7 @@ class _CreateTransactionPageState extends State<CreateTransactionPage> {
     );
   }
 
-  Widget _summaryRow(String k, String v, {bool strong = false}) {
+  Widget _summaryRow(String k, String v, {bool strong = false, Color? normalColor}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -690,7 +650,7 @@ class _CreateTransactionPageState extends State<CreateTransactionPage> {
               style: TextStyle(
                 fontSize: strong ? 14 : 13,
                 fontWeight: strong ? FontWeight.w700 : FontWeight.w500,
-                color: strong ? const Color(0xFF0F172A) : Colors.grey.shade600,
+                color: strong ? Colors.black87 : (normalColor ?? Colors.grey.shade600),
               ),
             ),
           ),
@@ -698,8 +658,8 @@ class _CreateTransactionPageState extends State<CreateTransactionPage> {
             v,
             style: TextStyle(
               fontWeight: FontWeight.w800,
-              fontSize: strong ? 16 : 14,
-              color: strong ? AppColors.primaryColorBlack : const Color(0xFF0F172A),
+              fontSize: strong ? 18 : 14,
+              color: strong ? AppColors.primaryColorBlack : Colors.black87,
             ),
           ),
         ],

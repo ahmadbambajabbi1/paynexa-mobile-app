@@ -172,7 +172,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'No notifications at the moment.\nNew transaction invitations will appear here.',
+                              'No notifications at the moment.\nPayNexa transaction updates will appear here.',
                               textAlign: TextAlign.center,
                               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                     color: Colors.grey.shade600,
@@ -237,8 +237,110 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                             children: [
                               // Existing card UI below remains unchanged
                               // (kept to avoid duplications and preserve current styling)
-                              // ignore: prefer_const_constructors
-                              SizedBox.shrink(),
+                              Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [
+                                    Row(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Container(
+                                          width: 36,
+                                          height: 36,
+                                          decoration: BoxDecoration(
+                                            color: colors.bg,
+                                            shape: BoxShape.circle,
+                                          ),
+                                          alignment: Alignment.center,
+                                          child: Text(
+                                            colors.icon,
+                                            style: TextStyle(
+                                              color: colors.text,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                n.message,
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .titleSmall
+                                                    ?.copyWith(
+                                                      fontWeight: FontWeight.w700,
+                                                    ),
+                                              ),
+                                              const SizedBox(height: 8),
+                                              Wrap(
+                                                spacing: 8,
+                                                runSpacing: 6,
+                                                children: [
+                                                  Chip(
+                                                    label: Text(n.role),
+                                                    visualDensity: VisualDensity.compact,
+                                                    backgroundColor: Colors.grey.shade100,
+                                                  ),
+                                                  Chip(
+                                                    label: Text(n.status.replaceAll('_', ' ')),
+                                                    visualDensity: VisualDensity.compact,
+                                                    backgroundColor: colors.bg,
+                                                    labelStyle: TextStyle(color: colors.text),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        if (isNew)
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 10,
+                                              vertical: 4,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: AppColors.gambianRed,
+                                              borderRadius: BorderRadius.circular(20),
+                                            ),
+                                            child: const Text(
+                                              'New',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                    if (n.status == 'AWAITING_ACCEPTANCE') ...[
+                                      const SizedBox(height: 12),
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: OutlinedButton(
+                                              onPressed: isProcessing
+                                                  ? null
+                                                  : () => _handleAccept(n.id, n.transactionId),
+                                              child: isProcessing
+                                                  ? const SizedBox(
+                                                      width: 18,
+                                                      height: 18,
+                                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                                    )
+                                                  : const Text('Accept'),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
                             ],
                           ),
                         ),

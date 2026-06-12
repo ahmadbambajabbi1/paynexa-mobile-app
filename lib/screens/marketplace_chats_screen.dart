@@ -36,6 +36,16 @@ class MarketplaceChatsScreen extends StatelessWidget {
                 ),
               ),
             ),
+            // Marketplace booking push notifications (PayNexa) — enable when FCM marketplace flow ships.
+            // Card(
+            //   child: Padding(
+            //     padding: const EdgeInsets.all(16),
+            //     child: Text(
+            //       'Booking push alerts will appear in Notifications once marketplace.notification.push is enabled.',
+            //       style: TextStyle(color: Colors.grey.shade700),
+            //     ),
+            //   ),
+            // ),
           ],
         ),
       ],

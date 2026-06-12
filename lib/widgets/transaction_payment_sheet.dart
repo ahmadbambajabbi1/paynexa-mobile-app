@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:provider/provider.dart';
 
 import '../api/escrow_api.dart' as escrow;
 import '../auth/auth_controller.dart';
-import '../config/constants.dart';
+import '../utils/currency.dart';
 import '../theme/app_colors.dart';
 import 'glass_card.dart';
+import 'wallet_deposit_sheet.dart';
 
 /// Returns the transaction id that was funded (may differ after claiming a share link).
 Future<String?> showTransactionPaymentSheet({
@@ -44,10 +44,31 @@ class _TransactionPaymentSheetState extends State<_TransactionPaymentSheet> {
   bool _busy = false;
   int _modeIndex = 0;
   String _walletBalance = '0';
+  String? _walletCurrency;
   List<Map<String, dynamic>> _cardMethods = const [];
   String? _selectedCardMethodId;
 
   double _parseBalance() => double.tryParse(_walletBalance) ?? 0;
+
+  double get _deficit {
+    final gap = widget.amount - _parseBalance();
+    return gap > 0 ? gap : 0;
+  }
+
+  Future<void> _fundWallet() async {
+    final funded = await showWalletDepositSheet(
+      context: context,
+      suggestedAmount: _deficit > 0 ? _deficit : widget.amount,
+      currency: _walletCurrency,
+      clientRequestIdPrefix: 'tx-deposit-${widget.transactionId}',
+    );
+    if (!funded || !mounted) return;
+    await _refresh();
+    if (!mounted) return;
+    if (_parseBalance() + 1e-9 >= widget.amount) {
+      await _payWithWallet();
+    }
+  }
 
   @override
   void initState() {
@@ -62,18 +83,13 @@ class _TransactionPaymentSheetState extends State<_TransactionPaymentSheet> {
 
     setState(() => _loading = true);
     try {
-      final cfg = await escrow.getEscrowConfig(token);
-      final pk = (cfg['stripePublishableKey'] ?? '').toString().trim();
-      if (pk.isNotEmpty) {
-        Stripe.publishableKey = pk;
-      }
-
       final w = await escrow.getWallet(token);
       final methods = await escrow.listPaymentMethods(token);
       final cards = methods.where((m) => m.provider == 'STRIPE' && m.type == 'CARD').toList();
 
       setState(() {
         _walletBalance = w.balance;
+        _walletCurrency = w.currency;
         _cardMethods = cards
             .map(
               (m) => {
@@ -122,30 +138,19 @@ class _TransactionPaymentSheetState extends State<_TransactionPaymentSheet> {
 
     setState(() => _busy = true);
     try {
-      final deposit = await escrow.createStripeDepositIntent(
+      final deposit = await escrow.confirmSavedCardStripeDeposit(
         token,
         amount: widget.amount,
         paymentMethodId: pmId,
         clientRequestId: 'tx-deposit-${widget.transactionId}',
       );
       if (!mounted) return;
-      final clientSecret = (deposit['clientSecret'] ?? '').toString();
-      final transferId = (deposit['transferId'] ?? '').toString();
-      if (clientSecret.isEmpty || transferId.isEmpty) {
-        throw Exception('Unable to start card payment.');
+      final credited = deposit['credited'] == true;
+      final status = (deposit['status'] ?? '').toString().toUpperCase();
+      if (!credited && status != 'SUCCEEDED') {
+        throw Exception('Card payment is $status. Please try again or use Wallet.');
       }
 
-      await Stripe.instance.initPaymentSheet(
-        paymentSheetParameters: SetupPaymentSheetParameters(
-          paymentIntentClientSecret: clientSecret,
-          merchantDisplayName: kAppName,
-          allowsDelayedPaymentMethods: true,
-        ),
-      );
-      await Stripe.instance.presentPaymentSheet();
-      if (!mounted) return;
-
-      await escrow.syncStripeDeposit(token, transferId: transferId);
       final res = await escrow.payTransactionFromWallet(
         token,
         transactionId: widget.transactionId,
@@ -165,6 +170,7 @@ class _TransactionPaymentSheetState extends State<_TransactionPaymentSheet> {
   Widget build(BuildContext context) {
     final canWallet = _parseBalance() + 1e-9 >= widget.amount && widget.amount > 0;
     final hasCards = _cardMethods.isNotEmpty;
+    final needsFunding = _modeIndex == 0 && !canWallet && widget.amount > 0;
     final bottom = MediaQuery.viewInsetsOf(context).bottom;
 
     return SafeArea(
@@ -172,20 +178,22 @@ class _TransactionPaymentSheetState extends State<_TransactionPaymentSheet> {
         padding: EdgeInsets.only(bottom: bottom),
         child: GlassCard(
           padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+          backgroundColor: AppColors.primaryColorBlack, // now works
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const Text(
                 'Pay for transaction',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white),
               ),
               const SizedBox(height: 6),
               Text(
-                'Amount due: $kCurrencyPrefix${widget.amount.toStringAsFixed(2)}',
-                style: TextStyle(color: Colors.grey.shade700),
+                'Amount due: ${moneyText(widget.amount, _walletCurrency)}',
+                style: const TextStyle(color: Colors.white70),
               ),
               const SizedBox(height: 12),
+              // Segmented button with dark theme
               SegmentedButton<int>(
                 segments: const [
                   ButtonSegment(value: 0, label: Text('Wallet')),
@@ -193,32 +201,51 @@ class _TransactionPaymentSheetState extends State<_TransactionPaymentSheet> {
                 ],
                 selected: {_modeIndex},
                 onSelectionChanged: (s) => setState(() => _modeIndex = s.first),
+                style: ButtonStyle(
+                  foregroundColor: WidgetStateProperty.resolveWith((states) {
+                    if (states.contains(WidgetState.selected)) return AppColors.primaryColorBlack;
+                    return Colors.white;
+                  }),
+                  backgroundColor: WidgetStateProperty.resolveWith((states) {
+                    if (states.contains(WidgetState.selected)) return Colors.white;
+                    return Colors.transparent;
+                  }),
+                  overlayColor: WidgetStateProperty.all(Colors.white24),
+                ),
               ),
               const SizedBox(height: 12),
               if (_loading)
                 const Padding(
                   padding: EdgeInsets.all(18),
-                  child: Center(child: CircularProgressIndicator()),
+                  child: Center(child: CircularProgressIndicator(color: Colors.white)),
                 )
               else ...[
                 if (_modeIndex == 0) ...[
                   _InfoRow(
                     label: 'Wallet balance',
-                    value: '$kCurrencyPrefix$_walletBalance',
+                    value: moneyText(_walletBalance, _walletCurrency),
                     valueColor: canWallet ? AppColors.gambianGreen : AppColors.gambianRed,
+                    labelColor: Colors.white70,
                   ),
                   if (!canWallet) ...[
                     const SizedBox(height: 8),
+                    _InfoRow(
+                      label: 'Amount needed',
+                      value: moneyText(_deficit, _walletCurrency),
+                      valueColor: Colors.orange.shade300,
+                      labelColor: Colors.white70,
+                    ),
+                    const SizedBox(height: 8),
                     Text(
-                      'Insufficient wallet balance. Add funds in Wallet or pay with card.',
-                      style: TextStyle(color: Colors.orange.shade900, fontSize: 12),
+                      'Insufficient wallet balance. Deposit here or pay with card.',
+                      style: TextStyle(color: Colors.orange.shade300, fontSize: 12),
                     ),
                   ],
                 ] else ...[
                   if (!hasCards)
                     Text(
                       'No saved cards found. Add a card in Wallet first.',
-                      style: TextStyle(color: Colors.orange.shade900, fontSize: 12),
+                      style: TextStyle(color: Colors.orange.shade300, fontSize: 12),
                     )
                   else
                     DropdownButtonFormField<String>(
@@ -232,19 +259,43 @@ class _TransactionPaymentSheetState extends State<_TransactionPaymentSheet> {
                                     ? (m['label'] ?? '').toString()
                                     : '${m['brand'] ?? 'card'} •••• ${m['last4'] ?? ''}',
                                 overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(color: Colors.black87),
                               ),
                             ),
                           )
                           .toList(),
                       onChanged: (v) => setState(() => _selectedCardMethodId = v),
-                      decoration: const InputDecoration(labelText: 'Saved card'),
+                      decoration: const InputDecoration(
+                        labelText: 'Saved card',
+                        labelStyle: TextStyle(color: Colors.white70),
+                        enabledBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(color: Colors.white30),
+                        ),
+                        focusedBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(color: Colors.white),
+                        ),
+                      ),
+                      dropdownColor: Colors.white,
+                      style: const TextStyle(color: Colors.black87),
                     ),
                   const SizedBox(height: 8),
                   Text(
                     'Card payment tops up your wallet, then pays from wallet into escrow.',
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                    style: const TextStyle(color: Colors.white60, fontSize: 12),
                   ),
                 ],
+              ],
+              if (needsFunding) ...[
+                const SizedBox(height: 10),
+                OutlinedButton.icon(
+                  onPressed: _busy || _loading ? null : _fundWallet,
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Colors.white),
+                    foregroundColor: Colors.white,
+                  ),
+                  icon: const Icon(Icons.add_card_outlined, size: 18),
+                  label: const Text('Deposit to wallet'),
+                ),
               ],
               const SizedBox(height: 14),
               Row(
@@ -252,6 +303,10 @@ class _TransactionPaymentSheetState extends State<_TransactionPaymentSheet> {
                   Expanded(
                     child: OutlinedButton(
                       onPressed: _busy ? null : () => Navigator.of(context).pop(),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Colors.white),
+                        foregroundColor: Colors.white,
+                      ),
                       child: const Text('Cancel'),
                     ),
                   ),
@@ -263,7 +318,17 @@ class _TransactionPaymentSheetState extends State<_TransactionPaymentSheet> {
                           : (_modeIndex == 0
                                 ? (canWallet ? _payWithWallet : null)
                                 : (hasCards ? _payWithCard : null)),
-                      child: Text(_busy ? 'Processing…' : 'Pay now'),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: AppColors.primaryColorBlack,
+                      ),
+                      child: Text(
+                        _busy
+                            ? 'Processing…'
+                            : needsFunding
+                                ? 'Pay from wallet'
+                                : 'Pay now',
+                      ),
                     ),
                   ),
                 ],
@@ -281,23 +346,25 @@ class _InfoRow extends StatelessWidget {
     required this.label,
     required this.value,
     this.valueColor,
+    this.labelColor,
   });
 
   final String label;
   final String value;
   final Color? valueColor;
+  final Color? labelColor;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+        Text(label, style: TextStyle(color: labelColor ?? Colors.white70, fontSize: 13)),
         Text(
           value,
           style: TextStyle(
             fontWeight: FontWeight.w800,
-            color: valueColor ?? Colors.grey.shade900,
+            color: valueColor ?? Colors.white,
           ),
         ),
       ],
