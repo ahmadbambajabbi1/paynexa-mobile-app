@@ -100,6 +100,22 @@ Future<MeResponse> fetchMe(String token) async {
   return MeResponse.fromJson(raw);
 }
 
+Future<void> registerFcmToken(
+  String token, {
+  required String fcmToken,
+  String? platform,
+}) async {
+  await apiFetch(
+    '/users/devices/fcm-token',
+    method: 'POST',
+    token: token,
+    body: {
+      'fcmToken': fcmToken,
+      if (platform != null) 'platform': platform,
+    },
+  );
+}
+
 Future<CompleteProfileResponse> completeProfile(
   String token, {
   required String displayName,

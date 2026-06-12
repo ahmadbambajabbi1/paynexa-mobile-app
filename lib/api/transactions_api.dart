@@ -11,21 +11,21 @@ Future<TransactionListResponse> listTransactionsForParty(
   String token,
   String userId,
 ) async {
-  final q = Uri(queryParameters: {
-    'buyerId': userId,
-    'sellerId': userId,
-  }).query;
-  final raw = await apiFetch('/transactions/by-party?$q', method: 'GET', token: token)
-      as Map<String, dynamic>;
+  final q = Uri(queryParameters: {'buyerId': userId, 'sellerId': userId}).query;
+  final raw =
+      await apiFetch('/transactions/by-party?$q', method: 'GET', token: token)
+          as Map<String, dynamic>;
   return TransactionListResponse.fromJson(raw);
 }
 
 Future<TransactionRoom> getTransactionRoom(String token, String id) async {
-  final raw = await apiFetch(
-    '/transactions/${Uri.encodeComponent(id)}',
-    method: 'GET',
-    token: token,
-  ) as Map<String, dynamic>;
+  final raw =
+      await apiFetch(
+            '/transactions/${Uri.encodeComponent(id)}',
+            method: 'GET',
+            token: token,
+          )
+          as Map<String, dynamic>;
   return TransactionRoom.fromJson(raw);
 }
 
@@ -38,19 +38,21 @@ Future<CreateTransactionResult> createTransaction(
   required String fundedBy,
   String? type,
 }) async {
-  final raw = await apiFetch(
-    '/transactions',
-    method: 'POST',
-    token: token,
-    body: {
-      'createdByUserId': createdByUserId,
-      'counterpartyId': counterpartyId,
-      'role': role,
-      'productId': productId,
-      'fundedBy': fundedBy,
-      if (type != null) 'type': type,
-    },
-  ) as Map<String, dynamic>;
+  final raw =
+      await apiFetch(
+            '/transactions',
+            method: 'POST',
+            token: token,
+            body: {
+              'createdByUserId': createdByUserId,
+              'counterpartyId': counterpartyId,
+              'role': role,
+              'productId': productId,
+              'fundedBy': fundedBy,
+              ?'type': type,
+            },
+          )
+          as Map<String, dynamic>;
   return CreateTransactionResult(
     transactionId: raw['transactionId'] as String,
     status: raw['status'] as String? ?? '',
@@ -65,17 +67,19 @@ Future<CreateTransactionResult> createEscrowTransaction(
   required String productId,
   String? type,
 }) async {
-  final raw = await apiFetch(
-    '/transactions/escrow',
-    method: 'POST',
-    token: token,
-    body: {
-      'createdByUserId': createdByUserId,
-      'counterpartyId': counterpartyId,
-      'productId': productId,
-      if (type != null) 'type': type,
-    },
-  ) as Map<String, dynamic>;
+  final raw =
+      await apiFetch(
+            '/transactions/escrow',
+            method: 'POST',
+            token: token,
+            body: {
+              'createdByUserId': createdByUserId,
+              'counterpartyId': counterpartyId,
+              'productId': productId,
+              ?'type': type,
+            },
+          )
+          as Map<String, dynamic>;
   return CreateTransactionResult(
     transactionId: raw['transactionId'] as String,
     status: raw['status'] as String? ?? '',
@@ -94,21 +98,23 @@ Future<CreateTransactionResult> createPublicTransaction(
   String? sellerNote,
   String? type,
 }) async {
-  final raw = await apiFetch(
-    '/transactions/public',
-    method: 'POST',
-    token: token,
-    body: {
-      'createdByUserId': createdByUserId,
-      'itemTitle': itemTitle,
-      if (itemDescription != null) 'itemDescription': itemDescription,
-      'quantity': quantity,
-      'unitPrice': unitPrice,
-      if (deliveryNeeded != null) 'deliveryNeeded': deliveryNeeded,
-      if (sellerNote != null) 'sellerNote': sellerNote,
-      if (type != null) 'type': type,
-    },
-  ) as Map<String, dynamic>;
+  final raw =
+      await apiFetch(
+            '/transactions/public',
+            method: 'POST',
+            token: token,
+            body: {
+              'createdByUserId': createdByUserId,
+              'itemTitle': itemTitle,
+              ?'itemDescription': itemDescription,
+              'quantity': quantity,
+              'unitPrice': unitPrice,
+              ?'deliveryNeeded': deliveryNeeded,
+              ?'sellerNote': sellerNote,
+              ?'type': type,
+            },
+          )
+          as Map<String, dynamic>;
   return CreateTransactionResult(
     transactionId: raw['transactionId'] as String,
     status: raw['status'] as String? ?? '',
@@ -121,11 +127,13 @@ Future<TransactionNotificationResponse> listTransactionNotifications(
   String userId,
 ) async {
   final q = Uri(queryParameters: {'userId': userId}).query;
-  final raw = await apiFetch(
-    '/transactions/notifications?$q',
-    method: 'GET',
-    token: token,
-  ) as Map<String, dynamic>;
+  final raw =
+      await apiFetch(
+            '/transactions/notifications?$q',
+            method: 'GET',
+            token: token,
+          )
+          as Map<String, dynamic>;
   return TransactionNotificationResponse.fromJson(raw);
 }
 
@@ -151,7 +159,8 @@ Stream<Map<String, dynamic>> transactionNotificationEvents(
   req.headers.set(HttpHeaders.authorizationHeader, 'Bearer $token');
   req.headers.set('X-Device-Id', deviceId);
   final res = await req.close();
-  await for (final line in res.transform(utf8.decoder).transform(const LineSplitter())) {
+  await for (final line
+      in res.transform(utf8.decoder).transform(const LineSplitter())) {
     if (!line.startsWith('data:')) continue;
     final payload = line.substring(5).trim();
     if (payload.isEmpty) continue;
@@ -176,11 +185,7 @@ class CreateTransactionResult {
   final String? paymentLinkPath;
 }
 
-Future<void> acceptTransaction(
-  String token,
-  String id,
-  String actorId,
-) async {
+Future<void> acceptTransaction(String token, String id, String actorId) async {
   await apiFetch(
     '/transactions/${Uri.encodeComponent(id)}/accept',
     method: 'PATCH',
@@ -210,16 +215,16 @@ Future<ParticipantSearchResult> searchTransactionParticipants(
   String query, {
   required String partySide,
 }) async {
-  final q = Uri(queryParameters: {
-    'role': role,
-    'query': query,
-    'partySide': partySide,
-  }).query;
-  final raw = await apiFetch(
-    '/transactions/${Uri.encodeComponent(transactionId)}/participants/search?$q',
-    method: 'GET',
-    token: token,
-  ) as Map<String, dynamic>;
+  final q = Uri(
+    queryParameters: {'role': role, 'query': query, 'partySide': partySide},
+  ).query;
+  final raw =
+      await apiFetch(
+            '/transactions/${Uri.encodeComponent(transactionId)}/participants/search?$q',
+            method: 'GET',
+            token: token,
+          )
+          as Map<String, dynamic>;
   return ParticipantSearchResult.fromJson(raw);
 }
 
@@ -241,7 +246,8 @@ Future<void> inviteTransactionParticipant(
       'participantUserId': participantUserId,
       'role': role,
       'partySide': partySide,
-      if (message != null && message.trim().isNotEmpty) 'message': message.trim(),
+      if (message != null && message.trim().isNotEmpty)
+        'message': message.trim(),
     },
   );
 }
@@ -257,25 +263,32 @@ Future<void> acceptTransactionParticipantInvite(
     '/transactions/${Uri.encodeComponent(transactionId)}/participant-accept',
     method: 'PATCH',
     token: token,
-    body: {
-      'actorId': actorId,
-      'role': role,
-      'partySide': partySide,
-    },
+    body: {'actorId': actorId, 'role': role, 'partySide': partySide},
   );
 }
 
-Future<void> claimPublicTransaction(
+Future<PublicTransactionSummary> getPublicTransactionSummary(String id) async {
+  final raw =
+      await apiFetch(
+            '/transactions/public/${Uri.encodeComponent(id)}',
+            method: 'GET',
+          )
+          as Map<String, dynamic>;
+  return PublicTransactionSummary.fromJson(raw);
+}
+
+Future<PublicClaimResult> claimPublicTransaction(
   String token,
   String transactionId,
   String buyerId,
 ) async {
-  await apiFetch(
-    '/transactions/public/${Uri.encodeComponent(transactionId)}/claim',
-    method: 'POST',
-    token: token,
-    body: {
-      'buyerId': buyerId,
-    },
-  );
+  final raw =
+      await apiFetch(
+            '/transactions/public/${Uri.encodeComponent(transactionId)}/claim',
+            method: 'PATCH',
+            token: token,
+            body: {'actorId': buyerId},
+          )
+          as Map<String, dynamic>;
+  return PublicClaimResult.fromJson(raw);
 }

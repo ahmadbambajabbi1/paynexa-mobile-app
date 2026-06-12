@@ -350,7 +350,7 @@ class _MarketplaceBookingDetailScreenState
                 height: 40,
                 child: CircularProgressIndicator(
                   strokeWidth: 3,
-                  color: AppColors.gambianBlue,
+                  color: AppColors.primaryColorBlack,
                 ),
               ),
               const SizedBox(height: 16),
@@ -646,7 +646,7 @@ class _PriceRowCard extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.gambianBlue,
+                          color: AppColors.primaryColorBlack,
                         ),
                       ),
                       TextSpan(
@@ -869,7 +869,7 @@ class _WorkflowStepper extends StatelessWidget {
                             height: 3,
                             decoration: BoxDecoration(
                               color: (steps[i].done || i < currentStep)
-                                  ? AppColors.gambianBlue
+                                  ? AppColors.primaryColorBlack
                                   : const Color(0xFFE2E8F0),
                               borderRadius: BorderRadius.circular(99),
                             ),
@@ -930,18 +930,18 @@ class _StepNode extends StatelessWidget {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: done
-                ? AppColors.gambianBlue
+                ? AppColors.primaryColorBlack
                 : (active ? Colors.white : Colors.white),
             border: Border.all(
               width: 2,
               color: done || active
-                  ? AppColors.gambianBlue
+                  ? AppColors.primaryColorBlack
                   : const Color(0xFFE2E8F0),
             ),
             boxShadow: active && !done
                 ? [
                     BoxShadow(
-                      color: AppColors.gambianBlue.withValues(alpha: 0.2),
+                      color: AppColors.primaryColorBlack.withValues(alpha: 0.2),
                       blurRadius: 8,
                     ),
                   ]
@@ -956,7 +956,7 @@ class _StepNode extends StatelessWidget {
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                     color: active
-                        ? AppColors.gambianBlue
+                        ? AppColors.primaryColorBlack
                         : _MarketplaceBookingDetailScreenState._slate500,
                   ),
                 ),
@@ -973,7 +973,7 @@ class _StepNode extends StatelessWidget {
             letterSpacing: 0.4,
             height: 1.1,
             color: done || active
-                ? AppColors.gambianBlue
+                ? AppColors.primaryColorBlack
                 : _MarketplaceBookingDetailScreenState._slate500,
           ),
         ),
@@ -1056,7 +1056,7 @@ class _BookingPartiesRow extends StatelessWidget {
               Icon(
                 Icons.people_outline,
                 size: 18,
-                color: AppColors.gambianBlue,
+                color: AppColors.primaryColorBlack,
               ),
               const SizedBox(width: 8),
               const Text(
@@ -1108,7 +1108,7 @@ class _BookingPartiesRow extends StatelessWidget {
                     text: ' (you)',
                     style: TextStyle(
                       fontWeight: FontWeight.w500,
-                      color: AppColors.gambianBlue.withValues(alpha: 0.85),
+                      color: AppColors.primaryColorBlack.withValues(alpha: 0.85),
                     ),
                   ),
               ],
@@ -1196,11 +1196,11 @@ class _TabPill extends StatelessWidget {
           child: Ink(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
-              color: selected ? AppColors.gambianBlue : Colors.transparent,
+              color: selected ? AppColors.primaryColorBlack : Colors.transparent,
               boxShadow: selected
                   ? [
                       BoxShadow(
-                        color: AppColors.gambianBlue.withValues(alpha: 0.2),
+                        color: AppColors.primaryColorBlack.withValues(alpha: 0.2),
                         blurRadius: 10,
                         offset: const Offset(0, 3),
                       ),
@@ -1280,7 +1280,7 @@ class _DetailTabBody extends StatelessWidget {
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 2,
-                    color: AppColors.gambianBlue.withValues(alpha: 0.7),
+                    color: AppColors.primaryColorBlack.withValues(alpha: 0.7),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -1520,10 +1520,10 @@ class _SectionHeaderCard extends StatelessWidget {
                 width: 32,
                 height: 32,
                 decoration: BoxDecoration(
-                  color: AppColors.gambianBlue.withValues(alpha: 0.1),
+                  color: AppColors.primaryColorBlack.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(icon, size: 18, color: AppColors.gambianBlue),
+                child: Icon(icon, size: 18, color: AppColors.primaryColorBlack),
               ),
               const SizedBox(width: 10),
               Text(
@@ -1591,8 +1591,8 @@ class _LocationBlock extends StatelessWidget {
           const SizedBox(height: 12),
           TextButton.icon(
             style: TextButton.styleFrom(
-              foregroundColor: AppColors.gambianBlue,
-              backgroundColor: AppColors.gambianBlue.withValues(alpha: 0.06),
+              foregroundColor: AppColors.primaryColorBlack,
+              backgroundColor: AppColors.primaryColorBlack.withValues(alpha: 0.06),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
@@ -1708,7 +1708,7 @@ class _ProviderTabBody extends StatelessWidget {
                     height: 56,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(14),
-                      color: AppColors.gambianBlue.withValues(alpha: 0.1),
+                      color: AppColors.primaryColorBlack.withValues(alpha: 0.1),
                     ),
                     alignment: Alignment.center,
                     child: Text(
@@ -1716,7 +1716,7 @@ class _ProviderTabBody extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.gambianBlue,
+                        color: AppColors.primaryColorBlack,
                       ),
                     ),
                   ),
@@ -1816,14 +1816,14 @@ class _ParticipantCard extends StatelessWidget {
             alignment: Alignment.center,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
-              color: AppColors.gambianBlue.withValues(alpha: 0.1),
+              color: AppColors.primaryColorBlack.withValues(alpha: 0.1),
             ),
             child: Text(
               _initials(primary),
               style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
-                color: AppColors.gambianBlue,
+                color: AppColors.primaryColorBlack,
               ),
             ),
           ),
@@ -1843,7 +1843,7 @@ class _ParticipantCard extends StatelessWidget {
                         fontSize: 10,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 1,
-                        color: AppColors.gambianBlue.withValues(alpha: 0.7),
+                        color: AppColors.primaryColorBlack.withValues(alpha: 0.7),
                       ),
                     ),
                     if (showBookedBadge && role.toLowerCase() == 'client')
@@ -2010,7 +2010,7 @@ class _ActionsCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.bolt_outlined, size: 18, color: AppColors.gambianBlue),
+              Icon(Icons.bolt_outlined, size: 18, color: AppColors.primaryColorBlack),
               const SizedBox(width: 8),
               const Text(
                 'Actions',
@@ -2053,7 +2053,7 @@ class _ActionsCard extends StatelessWidget {
                               ? () => onAction(a.action)
                               : null,
                           style: FilledButton.styleFrom(
-                            backgroundColor: AppColors.gambianBlue,
+                            backgroundColor: AppColors.primaryColorBlack,
                             foregroundColor: Colors.white,
                             minimumSize: const Size.fromHeight(52),
                             padding: const EdgeInsets.symmetric(
@@ -2061,7 +2061,7 @@ class _ActionsCard extends StatelessWidget {
                               vertical: 14,
                             ),
                             elevation: 3,
-                            shadowColor: AppColors.gambianBlue.withValues(
+                            shadowColor: AppColors.primaryColorBlack.withValues(
                               alpha: 0.25,
                             ),
                             shape: RoundedRectangleBorder(
@@ -2149,7 +2149,7 @@ class _RateProviderCardState extends State<_RateProviderCard> {
               fontSize: 12,
               fontWeight: FontWeight.w600,
               letterSpacing: 0.5,
-              color: AppColors.gambianBlue,
+              color: AppColors.primaryColorBlack,
             ),
           ),
           const SizedBox(height: 6),
@@ -2172,7 +2172,7 @@ class _RateProviderCardState extends State<_RateProviderCard> {
                   icon: Icon(
                     Icons.star,
                     color: n <= _rating
-                        ? AppColors.gambianBlue
+                        ? AppColors.primaryColorBlack
                         : Colors.grey.shade300,
                   ),
                 ),
@@ -2206,7 +2206,7 @@ class _RateProviderCardState extends State<_RateProviderCard> {
                 ? null
                 : () => widget.onSubmit(_rating, _controller.text),
             style: FilledButton.styleFrom(
-              backgroundColor: AppColors.gambianBlue,
+              backgroundColor: AppColors.primaryColorBlack,
               minimumSize: const Size(double.infinity, 48),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -2332,7 +2332,7 @@ class _BookingInfoCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.info_outline, size: 18, color: AppColors.gambianBlue),
+              Icon(Icons.info_outline, size: 18, color: AppColors.primaryColorBlack),
               const SizedBox(width: 8),
               const Text(
                 'Booking Info',
@@ -2394,7 +2394,7 @@ class _BookingInfoCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: AppColors.gambianBlue.withValues(alpha: 0.06),
+              color: AppColors.primaryColorBlack.withValues(alpha: 0.06),
               borderRadius: BorderRadius.circular(999),
             ),
             child: Text(
@@ -2402,7 +2402,7 @@ class _BookingInfoCard extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
-                color: AppColors.gambianBlue,
+                color: AppColors.primaryColorBlack,
               ),
             ),
           )
@@ -2481,7 +2481,7 @@ class _CommentsSection extends StatelessWidget {
               Icon(
                 Icons.chat_bubble_outline,
                 size: 18,
-                color: AppColors.gambianBlue,
+                color: AppColors.primaryColorBlack,
               ),
               const SizedBox(width: 8),
               const Text(
@@ -2521,7 +2521,7 @@ class _CommentsSection extends StatelessWidget {
           FilledButton.icon(
             onPressed: busyComment || onPost == null ? null : () => onPost!(),
             style: FilledButton.styleFrom(
-              backgroundColor: AppColors.gambianBlue,
+              backgroundColor: AppColors.primaryColorBlack,
               minimumSize: const Size(double.infinity, 48),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -2618,7 +2618,7 @@ class _CommentTile extends StatelessWidget {
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8),
-                color: isSelf ? AppColors.gambianBlue : Colors.grey.shade300,
+                color: isSelf ? AppColors.primaryColorBlack : Colors.grey.shade300,
               ),
               child: Text(
                 initial,
@@ -2651,7 +2651,7 @@ class _CommentTile extends StatelessWidget {
                           '(you)',
                           style: TextStyle(
                             fontSize: 12,
-                            color: AppColors.gambianBlue.withValues(alpha: 0.9),
+                            color: AppColors.primaryColorBlack.withValues(alpha: 0.9),
                           ),
                         ),
                       Container(
@@ -2663,7 +2663,7 @@ class _CommentTile extends StatelessWidget {
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(999),
                           border: Border.all(
-                            color: AppColors.gambianBlue.withValues(
+                            color: AppColors.primaryColorBlack.withValues(
                               alpha: 0.12,
                             ),
                           ),
@@ -2673,7 +2673,7 @@ class _CommentTile extends StatelessWidget {
                           style: const TextStyle(
                             fontSize: 9,
                             fontWeight: FontWeight.w600,
-                            color: AppColors.gambianBlue,
+                            color: AppColors.primaryColorBlack,
                           ),
                         ),
                       ),

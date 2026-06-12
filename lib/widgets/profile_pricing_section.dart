@@ -179,7 +179,7 @@
 //                             : FilledButton(
 //                                 onPressed: () => _save(row.productTypeId),
 //                                 style: FilledButton.styleFrom(
-//                                   backgroundColor: AppColors.gambianBlue,
+//                                   backgroundColor: AppColors.primaryColorBlack,
 //                                   foregroundColor: Colors.white,
 //                                   minimumSize: const Size(64, 36),
 //                                   padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -379,7 +379,7 @@ class _PricingCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: AppColors.gambianBlue.withOpacity(0.1),
+                  color: AppColors.primaryColorBlack.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
@@ -387,7 +387,7 @@ class _PricingCard extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w800,
-                    color: AppColors.gambianBlue,
+                    color: AppColors.primaryColorBlack,
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -403,7 +403,7 @@ class _PricingCard extends StatelessWidget {
                 FilledButton(
                   onPressed: onSave,
                   style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.gambianBlue,
+                    backgroundColor: AppColors.primaryColorBlack,
                     foregroundColor: Colors.white,
                     minimumSize: const Size(64, 32),
                     padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -426,7 +426,7 @@ class _PricingCard extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
-                  color: AppColors.gambianBlue,
+                  color: AppColors.primaryColorBlack,
                 ),
               ),
               const SizedBox(width: 4),
@@ -452,7 +452,7 @@ class _PricingCard extends StatelessWidget {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: AppColors.gambianBlue, width: 2),
+                      borderSide: const BorderSide(color: AppColors.primaryColorBlack, width: 2),
                     ),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   ),

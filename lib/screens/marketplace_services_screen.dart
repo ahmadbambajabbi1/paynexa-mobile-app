@@ -119,7 +119,7 @@
 //                   Expanded(child: Text('My services', style: displayHeading(context))),
 //                   FilledButton.icon(
 //                     onPressed: _openCreate,
-//                     style: FilledButton.styleFrom(backgroundColor: AppColors.gambianBlue),
+//                     style: FilledButton.styleFrom(backgroundColor: AppColors.primaryColorBlack),
 //                     icon: const Icon(Icons.add, size: 20),
 //                     label: const Text('Create service'),
 //                   ),
@@ -254,7 +254,7 @@
 //                                 fontSize: 12,
 //                                 fontWeight: FontWeight.w700,
 //                                 letterSpacing: 0.4,
-//                                 color: AppColors.gambianBlue,
+//                                 color: AppColors.primaryColorBlack,
 //                               ),
 //                             ),
 //                             const SizedBox(height: 8),
@@ -301,7 +301,7 @@ import '../theme/app_theme.dart';
 import 'marketplace_create_service_screen.dart';
 import 'service_detail_screen.dart';
 
-const _blue = AppColors.gambianBlue;
+const _blue = AppColors.primaryColorBlack;
 const _blueTint = Color(0xFFE8EBFA);
 const _blueBorder = Color(0xFFB5BEF0);
 

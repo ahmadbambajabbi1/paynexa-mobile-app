@@ -1,5 +1,8 @@
+import 'dart:typed_data';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../api/api_error.dart';
@@ -16,26 +19,54 @@ class PersonalKycApplyScreen extends StatefulWidget {
 
 class _PersonalKycApplyScreenState extends State<PersonalKycApplyScreen> {
   PlatformFile? _idDoc;
-  PlatformFile? _selfieDoc;
+  Uint8List? _selfieBytes;
+  String? _selfieName;
   bool _busy = false;
   String? _err;
 
-  Future<void> _pick(bool selfie) async {
+  Future<void> _pickId() async {
     final r = await FilePicker.platform.pickFiles(withData: true);
     if (r == null || r.files.isEmpty) return;
+    final file = r.files.first;
+    if (!isAllowedKycUploadFilename(file.name)) {
+      setState(() {
+        _err = 'Please choose a PDF, JPEG, PNG, WebP, or GIF file.';
+      });
+      return;
+    }
     setState(() {
-      if (selfie) {
-        _selfieDoc = r.files.first;
-      } else {
-        _idDoc = r.files.first;
-      }
+      _idDoc = file;
+      _err = null;
+    });
+  }
+
+  Future<void> _captureSelfie() async {
+    final picker = ImagePicker();
+    final photo = await picker.pickImage(
+      source: ImageSource.camera,
+      preferredCameraDevice: CameraDevice.front,
+      imageQuality: 85,
+    );
+    if (photo == null) return;
+    final bytes = await photo.readAsBytes();
+    if (!mounted) return;
+    setState(() {
+      _selfieBytes = bytes;
+      _selfieName = photo.name.isEmpty ? 'selfie.jpg' : photo.name;
+      _err = null;
     });
   }
 
   Future<void> _submit() async {
     final auth = context.read<AuthController>();
     final token = auth.token;
-    if (token == null || _idDoc?.bytes == null || _selfieDoc?.bytes == null) {
+    if (token == null) return;
+    if (_idDoc?.bytes == null) {
+      setState(() => _err = 'Government ID card or passport is required.');
+      return;
+    }
+    if (_selfieBytes == null || _selfieBytes!.isEmpty) {
+      setState(() => _err = 'Selfie is required.');
       return;
     }
     setState(() {
@@ -44,8 +75,11 @@ class _PersonalKycApplyScreenState extends State<PersonalKycApplyScreen> {
     });
     try {
       final idKey = await uploadKycFile(token, _idDoc!.bytes!, _idDoc!.name);
-      final selfieKey =
-          await uploadKycFile(token, _selfieDoc!.bytes!, _selfieDoc!.name);
+      final selfieKey = await uploadKycFile(
+        token,
+        _selfieBytes!,
+        _selfieName ?? 'selfie.jpg',
+      );
       await submitKycDocument(
         token,
         kind: 'PERSONAL',
@@ -56,13 +90,14 @@ class _PersonalKycApplyScreenState extends State<PersonalKycApplyScreen> {
         token,
         kind: 'PERSONAL',
         fileKey: selfieKey,
-        uploader: 'personal:selfie',
+        uploader: 'personal:selfie_camera',
       );
       await auth.refreshUser();
       if (!mounted) return;
       setState(() {
         _idDoc = null;
-        _selfieDoc = null;
+        _selfieBytes = null;
+        _selfieName = null;
       });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Submitted for admin review.')),
@@ -117,10 +152,6 @@ class _PersonalKycApplyScreenState extends State<PersonalKycApplyScreen> {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          Text(
-            'Upload your ID card and selfie. After you submit, an administrator must approve your KYC before you can create transactions.',
-            style: TextStyle(color: Colors.grey.shade700),
-          ),
           if (u?.personalKycStatus == 'REJECTED' &&
               u?.personalKycRejectedReason != null &&
               u!.personalKycRejectedReason!.isNotEmpty) ...[
@@ -141,7 +172,10 @@ class _PersonalKycApplyScreenState extends State<PersonalKycApplyScreen> {
                       ),
                     ),
                     const SizedBox(height: 6),
-                    Text(u.personalKycRejectedReason!, style: TextStyle(color: Colors.red.shade900)),
+                    Text(
+                      u.personalKycRejectedReason!,
+                      style: TextStyle(color: Colors.red.shade900),
+                    ),
                   ],
                 ),
               ),
@@ -149,16 +183,16 @@ class _PersonalKycApplyScreenState extends State<PersonalKycApplyScreen> {
           ],
           const SizedBox(height: 16),
           ListTile(
-            title: const Text('Government ID card'),
+            title: const Text('Government ID card or passport'),
             subtitle: Text(_idDoc?.name ?? 'Tap to choose file'),
             trailing: const Icon(Icons.upload_file),
-            onTap: _busy ? null : () => _pick(false),
+            onTap: _busy ? null : _pickId,
           ),
           ListTile(
             title: const Text('Selfie'),
-            subtitle: Text(_selfieDoc?.name ?? 'Tap to choose file'),
+            subtitle: Text(_selfieName ?? 'Take photo'),
             trailing: const Icon(Icons.camera_alt_outlined),
-            onTap: _busy ? null : () => _pick(true),
+            onTap: _busy ? null : _captureSelfie,
           ),
           if (_err != null)
             Padding(
@@ -168,7 +202,9 @@ class _PersonalKycApplyScreenState extends State<PersonalKycApplyScreen> {
           const SizedBox(height: 20),
           FilledButton(
             onPressed: _busy ? null : _submit,
-            style: FilledButton.styleFrom(backgroundColor: AppColors.gambianBlue),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.primaryColorBlack,
+            ),
             child: Text(_busy ? 'Submitting...' : 'Submit for review'),
           ),
         ],

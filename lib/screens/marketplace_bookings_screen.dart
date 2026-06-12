@@ -326,13 +326,13 @@
 //                 width: 64,
 //                 height: 64,
 //                 decoration: BoxDecoration(
-//                   color: AppColors.gambianBlue.withValues(alpha: 0.06),
+//                   color: AppColors.primaryColorBlack.withValues(alpha: 0.06),
 //                   borderRadius: BorderRadius.circular(16),
 //                 ),
 //                 child: Icon(
 //                   Icons.calendar_today_outlined,
 //                   size: 32,
-//                   color: AppColors.gambianBlue.withValues(alpha: 0.55),
+//                   color: AppColors.primaryColorBlack.withValues(alpha: 0.55),
 //                 ),
 //               ),
 //               const SizedBox(height: 16),
@@ -360,12 +360,12 @@
 //                 const SizedBox(height: 24),
 //                 FilledButton.icon(
 //                   style: FilledButton.styleFrom(
-//                     backgroundColor: AppColors.gambianBlue,
+//                     backgroundColor: AppColors.primaryColorBlack,
 //                     foregroundColor: Colors.white,
 //                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
 //                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
 //                     elevation: 3,
-//                     shadowColor: AppColors.gambianBlue.withValues(alpha: 0.2),
+//                     shadowColor: AppColors.primaryColorBlack.withValues(alpha: 0.2),
 //                   ),
 //                   onPressed: onBrowseServices,
 //                   icon: const Icon(Icons.search, size: 18),
@@ -501,7 +501,7 @@
 //                 fontSize: 12,
 //                 fontWeight: FontWeight.w700,
 //                 letterSpacing: 1.2,
-//                 color: AppColors.gambianBlue,
+//                 color: AppColors.primaryColorBlack,
 //               ),
 //             ),
 //             Text('·', style: TextStyle(color: Colors.grey.shade300, fontWeight: FontWeight.w600)),
@@ -549,10 +549,10 @@
 
 //     final viewBtn = FilledButton(
 //       style: FilledButton.styleFrom(
-//         backgroundColor: AppColors.gambianBlue,
+//         backgroundColor: AppColors.primaryColorBlack,
 //         foregroundColor: Colors.white,
 //         elevation: 2,
-//         shadowColor: AppColors.gambianBlue.withValues(alpha: 0.2),
+//         shadowColor: AppColors.primaryColorBlack.withValues(alpha: 0.2),
 //         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
 //         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
 //       ),
@@ -623,7 +623,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 import 'marketplace_booking_detail_screen.dart';
 
-const _blue = AppColors.gambianBlue;
+const _blue = AppColors.primaryColorBlack;
 const _blueTint = Color(0xFFE8EBFA);
 const _blueBorder = Color(0xFFB5BEF0);
 

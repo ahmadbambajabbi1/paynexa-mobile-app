@@ -177,6 +177,98 @@ class PublicTransactionViewer {
       );
 }
 
+class PublicTransactionSummary {
+  PublicTransactionSummary({
+    required this.id,
+    required this.workflow,
+    this.shareToken,
+    required this.sharePath,
+    required this.sellerId,
+    this.buyerId,
+    required this.seller,
+    required this.item,
+    this.itemDescription,
+    required this.quantity,
+    required this.unitPrice,
+    required this.amount,
+    required this.protectionFee,
+    required this.totalBuyerPays,
+    required this.deliveryNeeded,
+    required this.status,
+    this.sellerNote,
+  });
+
+  final String id;
+  final String workflow;
+  final String? shareToken;
+  final String sharePath;
+  final String sellerId;
+  final String? buyerId;
+  final String seller;
+  final String item;
+  final String? itemDescription;
+  final int quantity;
+  final String unitPrice;
+  final String amount;
+  final String protectionFee;
+  final String totalBuyerPays;
+  final bool deliveryNeeded;
+  final String status;
+  final String? sellerNote;
+
+  factory PublicTransactionSummary.fromJson(Map<String, dynamic> j) =>
+      PublicTransactionSummary(
+        id: j['id'] as String,
+        workflow: j['workflow'] as String? ?? 'PUBLIC_SHAREABLE',
+        shareToken: j['shareToken'] as String?,
+        sharePath: j['sharePath'] as String? ?? '',
+        sellerId: j['sellerId'] as String,
+        buyerId: j['buyerId'] as String?,
+        seller: j['seller'] as String? ?? 'Seller',
+        item: j['item'] as String? ?? '',
+        itemDescription: j['itemDescription'] as String?,
+        quantity: (j['quantity'] as num?)?.toInt() ?? 1,
+        unitPrice: j['unitPrice'] as String? ?? '0.00',
+        amount: j['amount'] as String? ?? '0.00',
+        protectionFee: j['protectionFee'] as String? ?? '0.00',
+        totalBuyerPays: j['totalBuyerPays'] as String? ?? '0.00',
+        deliveryNeeded: j['deliveryNeeded'] as bool? ?? false,
+        status: j['status'] as String? ?? '',
+        sellerNote: j['sellerNote'] as String?,
+      );
+
+  bool get isFundedOrBeyond => {
+    'FUNDED',
+    'IN_PROGRESS',
+    'INSPECTION',
+    'COMPLETED',
+    'CLOSED',
+    'REFUNDED',
+  }.contains(status.toUpperCase());
+}
+
+class PublicClaimResult {
+  PublicClaimResult({
+    required this.transactionId,
+    required this.workflow,
+    required this.buyerId,
+    required this.status,
+  });
+
+  final String transactionId;
+  final String workflow;
+  final String buyerId;
+  final String status;
+
+  factory PublicClaimResult.fromJson(Map<String, dynamic> j) =>
+      PublicClaimResult(
+        transactionId: j['transactionId'] as String,
+        workflow: j['workflow'] as String? ?? 'PUBLIC_SHAREABLE',
+        buyerId: j['buyerId'] as String? ?? '',
+        status: j['status'] as String? ?? '',
+      );
+}
+
 class TransactionRoom {
   TransactionRoom({
     required this.transaction,

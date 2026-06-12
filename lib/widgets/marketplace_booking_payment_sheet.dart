@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:provider/provider.dart';
 
 import '../api/escrow_api.dart' as escrow;
 import '../api/service_marketplace_api.dart' as sm;
 import '../auth/auth_controller.dart';
-import '../config/constants.dart';
 import '../theme/app_colors.dart';
 import '../widgets/glass_card.dart';
+import 'wallet_deposit_sheet.dart';
 
 class BookingPaymentBreakdown {
   const BookingPaymentBreakdown({
@@ -85,6 +84,25 @@ class _MarketplaceBookingPaymentSheetState extends State<_MarketplaceBookingPaym
 
   double _parseBalance() => double.tryParse(_walletBalance) ?? 0;
 
+  double get _deficit {
+    final gap = widget.amount - _parseBalance();
+    return gap > 0 ? gap : 0;
+  }
+
+  Future<void> _fundWallet() async {
+    final funded = await showWalletDepositSheet(
+      context: context,
+      suggestedAmount: _deficit > 0 ? _deficit : widget.amount,
+      clientRequestIdPrefix: 'booking-deposit-${widget.bookingId}',
+    );
+    if (!funded || !mounted) return;
+    await _refresh();
+    if (!mounted) return;
+    if (_parseBalance() + 1e-9 >= widget.amount) {
+      await _payWithWallet();
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -98,12 +116,6 @@ class _MarketplaceBookingPaymentSheetState extends State<_MarketplaceBookingPaym
 
     setState(() => _loading = true);
     try {
-      final cfg = await escrow.getEscrowConfig(token);
-      final pk = (cfg['stripePublishableKey'] ?? '').toString().trim();
-      if (pk.isNotEmpty) {
-        Stripe.publishableKey = pk;
-      }
-
       final w = await escrow.getWallet(token);
       final methods = await escrow.listPaymentMethods(token);
       final cards = methods.where((m) => m.provider == 'STRIPE' && m.type == 'CARD').toList();
@@ -163,30 +175,19 @@ class _MarketplaceBookingPaymentSheetState extends State<_MarketplaceBookingPaym
 
     setState(() => _busy = true);
     try {
-      final deposit = await escrow.createStripeDepositIntent(
+      final deposit = await escrow.confirmSavedCardStripeDeposit(
         token,
         amount: widget.amount,
         paymentMethodId: pmId,
         clientRequestId: 'booking-deposit-${widget.bookingId}',
       );
       if (!mounted) return;
-      final clientSecret = (deposit['clientSecret'] ?? '').toString();
-      final transferId = (deposit['transferId'] ?? '').toString();
-      if (clientSecret.isEmpty || transferId.isEmpty) {
-        throw Exception('Unable to start card payment.');
+      final credited = deposit['credited'] == true;
+      final status = (deposit['status'] ?? '').toString().toUpperCase();
+      if (!credited && status != 'SUCCEEDED') {
+        throw Exception('Card payment is $status. Please try again or use Wallet.');
       }
 
-      await Stripe.instance.initPaymentSheet(
-        paymentSheetParameters: SetupPaymentSheetParameters(
-          paymentIntentClientSecret: clientSecret,
-          merchantDisplayName: kAppName,
-          allowsDelayedPaymentMethods: true,
-        ),
-      );
-      await Stripe.instance.presentPaymentSheet();
-      if (!mounted) return;
-
-      await escrow.syncStripeDeposit(token, transferId: transferId);
       await escrow.payMarketplaceServiceBooking(
         token,
         bookingId: widget.bookingId,
@@ -212,6 +213,7 @@ class _MarketplaceBookingPaymentSheetState extends State<_MarketplaceBookingPaym
   Widget build(BuildContext context) {
     final canWallet = _parseBalance() + 1e-9 >= widget.amount && widget.amount > 0;
     final hasCards = _cardMethods.isNotEmpty;
+    final needsFunding = _modeIndex == 0 && !canWallet && widget.amount > 0;
 
     final bottom = MediaQuery.viewInsetsOf(context).bottom;
     return SafeArea(
@@ -229,7 +231,7 @@ class _MarketplaceBookingPaymentSheetState extends State<_MarketplaceBookingPaym
               ),
               const SizedBox(height: 6),
               Text(
-                'Total due: $kCurrencyPrefix${widget.amount.toStringAsFixed(2)}',
+                'Total due: D${widget.amount.toStringAsFixed(2)}',
                 style: TextStyle(color: Colors.grey.shade700),
               ),
               if (widget.breakdown != null) ...[
@@ -257,13 +259,19 @@ class _MarketplaceBookingPaymentSheetState extends State<_MarketplaceBookingPaym
                 if (_modeIndex == 0) ...[
                   _InfoRow(
                     label: 'Wallet balance',
-                    value: '$kCurrencyPrefix$_walletBalance',
+                    value: 'D$_walletBalance',
                     valueColor: canWallet ? AppColors.gambianGreen : AppColors.gambianRed,
                   ),
                   if (!canWallet) ...[
                     const SizedBox(height: 8),
+                    _InfoRow(
+                      label: 'Amount needed',
+                      value: 'D${_deficit.toStringAsFixed(2)}',
+                      valueColor: Colors.orange.shade900,
+                    ),
+                    const SizedBox(height: 8),
                     Text(
-                      'Insufficient wallet balance. Add funds from Wallet or pay with card.',
+                      'Insufficient wallet balance. Deposit here or pay with card.',
                       style: TextStyle(color: Colors.orange.shade900, fontSize: 12),
                     ),
                   ],
@@ -302,6 +310,14 @@ class _MarketplaceBookingPaymentSheetState extends State<_MarketplaceBookingPaym
                 ],
               ],
 
+              if (needsFunding) ...[
+                const SizedBox(height: 10),
+                OutlinedButton.icon(
+                  onPressed: _busy || _loading ? null : _fundWallet,
+                  icon: const Icon(Icons.add_card_outlined, size: 18),
+                  label: const Text('Deposit to wallet'),
+                ),
+              ],
               const SizedBox(height: 14),
               Row(
                 children: [
@@ -319,7 +335,7 @@ class _MarketplaceBookingPaymentSheetState extends State<_MarketplaceBookingPaym
                           : (_modeIndex == 0
                               ? (canWallet ? _payWithWallet : null)
                               : (hasCards ? _payWithCard : null)),
-                      style: FilledButton.styleFrom(backgroundColor: AppColors.gambianBlue),
+                      style: FilledButton.styleFrom(backgroundColor: AppColors.primaryColorBlack),
                       child: Text(_busy ? 'Working…' : 'Pay and confirm'),
                     ),
                   ),
@@ -354,9 +370,9 @@ class _BreakdownCard extends StatelessWidget {
         children: [
           const Text('Payment breakdown', style: TextStyle(fontWeight: FontWeight.w700)),
           const SizedBox(height: 8),
-          _kv('Service price', '${kCurrencyPrefix}${b.serviceAmount.toStringAsFixed(2)}'),
+          _kv('Service price', 'D${b.serviceAmount.toStringAsFixed(2)}'),
           if (b.customerPlatformFee > 0)
-            _kv('Customer fee', '${kCurrencyPrefix}${b.customerPlatformFee.toStringAsFixed(2)}'),
+            _kv('Customer fee', 'D${b.customerPlatformFee.toStringAsFixed(2)}'),
         ],
       ),
     );

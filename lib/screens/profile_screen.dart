@@ -106,7 +106,7 @@
 //           FilledButton(
 //             onPressed: () => _openApplyFlow(context, user),
 //             style: FilledButton.styleFrom(
-//               backgroundColor: AppColors.gambianBlue,
+//               backgroundColor: AppColors.primaryColorBlack,
 //               foregroundColor: Colors.white,
 //               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
 //               minimumSize: Size.zero,
@@ -233,7 +233,7 @@
 //                             FilledButton(
 //                               onPressed: () => _openApplyFlow(context, user),
 //                               style: FilledButton.styleFrom(
-//                                 backgroundColor: AppColors.gambianBlue,
+//                                 backgroundColor: AppColors.primaryColorBlack,
 //                                 foregroundColor: Colors.white,
 //                                 padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
 //                                 minimumSize: Size.zero,
@@ -371,6 +371,7 @@
 //   }
 // }
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../auth/auth_controller.dart';
@@ -396,8 +397,8 @@ class ProfileScreen extends StatelessWidget {
     final src = (d != null && d.isNotEmpty)
         ? d
         : (f != null && f.isNotEmpty)
-            ? f
-            : (user.phone ?? user.email ?? '?');
+        ? f
+        : (user.phone ?? user.email ?? '?');
     final parts = src.split(RegExp(r'\s+')).where((e) => e.isNotEmpty).toList();
     if (parts.length >= 2) {
       return (parts[0][0] + parts[1][0]).toUpperCase();
@@ -425,7 +426,9 @@ class ProfileScreen extends StatelessWidget {
               children: [
                 Text(
                   'Choose role',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -473,204 +476,262 @@ class ProfileScreen extends StatelessWidget {
 
     final lawyer = user.applicationForRole('LAWYER');
     final agent = user.applicationForRole('AGENT');
-    final canApplyAny = user.canApplyProfessionalKyc('LAWYER') || user.canApplyProfessionalKyc('AGENT');
+    final canApplyAny =
+        user.canApplyProfessionalKyc('LAWYER') ||
+        user.canApplyProfessionalKyc('AGENT');
     final approvedApp = lawyer?.isApproved == true
         ? lawyer
         : (agent?.isApproved == true ? agent : null);
     final professionalLabel = approvedApp == null
-        ? 'Professional account'
+        ? 'Personal account'
         : (approvedApp.role == 'LAWYER' ? 'Lawyer' : 'Agent');
 
     final displayTitle = user.displayName?.trim().isNotEmpty == true
         ? user.displayName!.trim()
-        : (user.fullName?.trim().isNotEmpty == true ? user.fullName!.trim() : 'Your account');
+        : (user.fullName?.trim().isNotEmpty == true
+              ? user.fullName!.trim()
+              : 'Your account');
 
-    return Scaffold(
-      backgroundColor: AppColors.pageGradientStart,
-      body: RefreshIndicator(
-        onRefresh: () => context.read<AuthController>().refreshUser(),
-        color: AppColors.gambianBlue,
-        backgroundColor: Colors.white,
-        child: CustomScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          slivers: [
-            // Profile Header
-            SliverToBoxAdapter(
-              child: Container(
-                color: AppColors.gambianBlue,
-                child: SafeArea(
-                  bottom: false,
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
-                    child: Column(
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              width: 80,
-                              height: 80,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Colors.white.withOpacity(0.15),
-                                border: Border.all(color: Colors.white.withOpacity(0.3), width: 3),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  _initials(user),
-                                  style: const TextStyle(
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: AppColors.primaryColorBlack,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+        systemNavigationBarColor: AppColors.primaryColorBlack,
+        systemNavigationBarIconBrightness: Brightness.light,
+      ),
+      child: Scaffold(
+        backgroundColor: AppColors.pageGradientStart,
+        body: RefreshIndicator(
+          onRefresh: () => context.read<AuthController>().refreshUser(),
+          color: AppColors.primaryColorBlack,
+          backgroundColor: Colors.white,
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              // Profile Header
+              SliverToBoxAdapter(
+                child: Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        AppColors.primaryColorBlack,
+                        // Color(0xFF102A18),
+                        AppColors.primaryColorBlack,
+                        // Color(0xFF2B0710),
+                        AppColors.primaryColorBlack,
+                      ],
+                    ),
+                    // border: Border(
+                    //   bottom: BorderSide(
+                    //     color: AppColors.gambianGold,
+                    //     width: 2,
+                    //   ),
+                    // ),
+                  ),
+                  child: SafeArea(
+                    bottom: false,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 18, 24, 42),
+                      child: Column(
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                width: 80,
+                                height: 80,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.white.withValues(alpha: 0.15),
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.30),
+                                    width: 3,
                                   ),
                                 ),
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    displayTitle,
+                                child: Center(
+                                  child: Text(
+                                    _initials(user),
                                     style: const TextStyle(
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.w800,
+                                      fontSize: 28,
+                                      fontWeight: FontWeight.bold,
                                       color: Colors.white,
                                     ),
                                   ),
-                                  if (user.fullName?.trim().isNotEmpty == true &&
-                                      user.displayName?.trim() != user.fullName?.trim())
-                                    Padding(
-                                      padding: const EdgeInsets.only(top: 2),
-                                      child: Text(
-                                        user.fullName!.trim(),
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: Colors.white.withOpacity(0.7),
-                                        ),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      displayTitle,
+                                      style: const TextStyle(
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.w800,
+                                        color: Colors.white,
                                       ),
                                     ),
-                                  const SizedBox(height: 8),
-                                  Wrap(
-                                    spacing: 8,
-                                    runSpacing: 6,
-                                    children: [
-                                      _HeaderBadge(
-                                        label: professionalLabel,
-                                        isPrimary: true,
-                                      ),
-                                      if (user.emailVerifiedAt != null)
-                                        _HeaderBadge(
-                                          label: 'Verified',
-                                          icon: Icons.verified_outlined,
-                                          isSuccess: true,
+                                    if (user.fullName?.trim().isNotEmpty ==
+                                            true &&
+                                        user.displayName?.trim() !=
+                                            user.fullName?.trim())
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 2),
+                                        child: Text(
+                                          user.fullName!.trim(),
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.white.withValues(
+                                              alpha: 0.72,
+                                            ),
+                                          ),
                                         ),
-                                    ],
-                                  ),
-                                ],
+                                      ),
+                                    const SizedBox(height: 8),
+                                    Wrap(
+                                      spacing: 8,
+                                      runSpacing: 6,
+                                      children: [
+                                        _HeaderBadge(
+                                          label: professionalLabel,
+                                          isPrimary: true,
+                                        ),
+                                        if (user.emailVerifiedAt != null)
+                                          _HeaderBadge(
+                                            label: 'Verified',
+                                            icon: Icons.verified_outlined,
+                                            isSuccess: true,
+                                          ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                        if (canApplyAny) ...[
-                          const SizedBox(height: 16),
-                          SizedBox(
-                            width: double.infinity,
-                            child: FilledButton.icon(
-                              onPressed: () => _openApplyFlow(context, user),
-                              icon: const Icon(Icons.add, size: 18),
-                              label: const Text('Apply for Professional'),
-                              style: FilledButton.styleFrom(
-                                backgroundColor: Colors.white,
-                                foregroundColor: AppColors.gambianBlue,
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            // Content
-            SliverToBoxAdapter(
-              child: Transform.translate(
-                offset: const Offset(0, -8),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: AppColors.pageGradientStart,
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Contact Info
-                        _ProfileSection(
-                          title: 'Contact Information',
-                          children: [
-                            _InfoTile(
-                              icon: Icons.alternate_email_rounded,
-                              iconColor: Colors.blue.shade600,
-                              iconBg: Colors.blue.shade50,
-                              label: 'Email',
-                              value: user.email?.isNotEmpty == true ? user.email! : '—',
-                              badge: user.emailVerifiedAt != null ? 'Verified' : null,
-                            ),
-                            const SizedBox(height: 10),
-                            _InfoTile(
-                              icon: Icons.phone_iphone_rounded,
-                              iconColor: Colors.green.shade600,
-                              iconBg: Colors.green.shade50,
-                              label: 'Phone',
-                              value: user.phone?.isNotEmpty == true ? user.phone! : '—',
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        // Account Details
-                        _ProfileSection(
-                          title: 'Account Details',
-                          children: [
-                            _DetailRow(label: 'Account Type', value: professionalLabel),
-                            const Divider(height: 1),
-                            _DetailRow(
-                              label: 'Verification Status',
-                              value: user.emailVerifiedAt != null ? 'Verified' : 'Pending',
-                              valueColor: user.emailVerifiedAt != null ? Colors.green.shade700 : Colors.orange.shade700,
-                            ),
-                            if (approvedApp != null) ...[
-                              const Divider(height: 1),
-                              _DetailRow(label: 'Professional Role', value: approvedApp.role),
                             ],
-                          ],
-                        ),
-                        if (token != null && token.isNotEmpty && _hasApprovedProfessional(user)) ...[
-                          const SizedBox(height: 16),
-                          ProfilePricingSection(token: token),
+                          ),
+                          // if (canApplyAny) ...[
+                          //   const SizedBox(height: 16),
+                          //   SizedBox(
+                          //     width: double.infinity,
+                          //     child: FilledButton.icon(
+                          //       onPressed: () => _openApplyFlow(context, user),
+                          //       icon: const Icon(Icons.add, size: 18),
+                          //       label: const Text('Apply for Professional'),
+                          //       style: FilledButton.styleFrom(
+                          //         backgroundColor: Colors.white,
+                          //         foregroundColor: AppColors.primaryColorBlack,
+                          //         padding: const EdgeInsets.symmetric(vertical: 12),
+                          //         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          //       ),
+                          //     ),
+                          //   ),
+                          // ],
                         ],
-                        const SizedBox(height: 16),
-                        // Wallet Link
-                        _WalletTile(
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute<void>(builder: (_) => const BillingsScreen()),
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 12),
-                        const _SignOutSection(),
-                      ],
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ],
+              // Content
+              SliverToBoxAdapter(
+                child: Transform.translate(
+                  offset: const Offset(0, -8),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.pageGradientStart,
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(20),
+                      ),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Contact Info
+                          _ProfileSection(
+                            title: 'Contact Information',
+                            children: [
+                              _InfoTile(
+                                icon: Icons.alternate_email_rounded,
+                                iconColor: Colors.blue.shade600,
+                                iconBg: Colors.blue.shade50,
+                                label: 'Email',
+                                value: user.email?.isNotEmpty == true
+                                    ? user.email!
+                                    : '—',
+                                badge: user.emailVerifiedAt != null
+                                    ? 'Verified'
+                                    : null,
+                              ),
+                              const SizedBox(height: 10),
+                              _InfoTile(
+                                icon: Icons.phone_iphone_rounded,
+                                iconColor: Colors.green.shade600,
+                                iconBg: Colors.green.shade50,
+                                label: 'Phone',
+                                value: user.phone?.isNotEmpty == true
+                                    ? user.phone!
+                                    : '—',
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          // Account Details
+                          _ProfileSection(
+                            title: 'Account Details',
+                            children: [
+                              _DetailRow(
+                                label: 'Account Type',
+                                value: professionalLabel,
+                              ),
+                              const Divider(height: 1),
+                              _DetailRow(
+                                label: 'Verification Status',
+                                value: user.emailVerifiedAt != null
+                                    ? 'Verified'
+                                    : 'Pending',
+                                valueColor: user.emailVerifiedAt != null
+                                    ? Colors.green.shade700
+                                    : Colors.orange.shade700,
+                              ),
+                              if (approvedApp != null) ...[
+                                const Divider(height: 1),
+                                _DetailRow(
+                                  label: 'Personal Role',
+                                  value: approvedApp.role,
+                                ),
+                              ],
+                            ],
+                          ),
+                          if (token != null &&
+                              token.isNotEmpty &&
+                              _hasApprovedProfessional(user)) ...[
+                            const SizedBox(height: 16),
+                            ProfilePricingSection(token: token),
+                          ],
+                          const SizedBox(height: 16),
+                          // Wallet Link
+                          // _WalletTile(
+                          //   onTap: () {
+                          //     Navigator.of(context).push(
+                          //       MaterialPageRoute<void>(builder: (_) => const BillingsScreen()),
+                          //     );
+                          //   },
+                          // ),
+                          // const SizedBox(height: 12),
+                          const _SignOutSection(),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -696,24 +757,30 @@ class _HeaderBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color: isPrimary
-            ? Colors.white.withOpacity(0.15)
+            ? Colors.white.withValues(alpha: 0.15)
             : isSuccess
-                ? Colors.green.withOpacity(0.2)
-                : Colors.white.withOpacity(0.1),
+            ? Colors.green.withValues(alpha: 0.20)
+            : Colors.white.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: isPrimary
-              ? Colors.white.withOpacity(0.25)
+              ? Colors.white.withValues(alpha: 0.25)
               : isSuccess
-                  ? Colors.green.withOpacity(0.3)
-                  : Colors.white.withOpacity(0.15),
+              ? Colors.green.withValues(alpha: 0.30)
+              : Colors.white.withValues(alpha: 0.15),
         ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[
-            Icon(icon, size: 12, color: isSuccess ? Colors.green.shade300 : Colors.white.withOpacity(0.9)),
+            Icon(
+              icon,
+              size: 12,
+              color: isSuccess
+                  ? Colors.green.shade300
+                  : Colors.white.withValues(alpha: 0.90),
+            ),
             const SizedBox(width: 4),
           ],
           Text(
@@ -721,7 +788,9 @@ class _HeaderBadge extends StatelessWidget {
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,
-              color: isSuccess ? Colors.green.shade100 : Colors.white.withOpacity(0.9),
+              color: isSuccess
+                  ? Colors.green.shade100
+                  : Colors.white.withValues(alpha: 0.90),
             ),
           ),
         ],
@@ -760,19 +829,28 @@ class _RoleOption extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: AppColors.gambianBlue.withOpacity(0.1),
+                color: AppColors.primaryColorBlack.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(icon, color: AppColors.gambianBlue),
+              child: Icon(icon, color: AppColors.primaryColorBlack),
             ),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                    ),
+                  ),
                   const SizedBox(height: 2),
-                  Text(subtitle, style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+                  Text(
+                    subtitle,
+                    style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                  ),
                 ],
               ),
             ),
@@ -798,7 +876,11 @@ class _ProfileSection extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 12, offset: const Offset(0, 2)),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 2),
+          ),
         ],
       ),
       child: Column(
@@ -851,7 +933,10 @@ class _InfoTile extends StatelessWidget {
         children: [
           Container(
             padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(10)),
+            decoration: BoxDecoration(
+              color: iconBg,
+              borderRadius: BorderRadius.circular(10),
+            ),
             child: Icon(icon, size: 20, color: iconColor),
           ),
           const SizedBox(width: 12),
@@ -859,11 +944,21 @@ class _InfoTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey.shade500)),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade500,
+                  ),
+                ),
                 const SizedBox(height: 4),
                 Text(
                   value,
-                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                  ),
                   maxLines: 4,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -880,7 +975,11 @@ class _InfoTile extends StatelessWidget {
               ),
               child: Text(
                 badge!,
-                style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.green.shade700),
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.green.shade700,
+                ),
               ),
             ),
           ],
@@ -904,7 +1003,10 @@ class _DetailRow extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(fontSize: 14, color: Colors.grey.shade600)),
+          Text(
+            label,
+            style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+          ),
           Text(
             value,
             style: TextStyle(
@@ -927,12 +1029,19 @@ class _SignOutSection extends StatelessWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Sign out'),
-        content: const Text('You will need to sign in again to access your account.'),
+        content: const Text(
+          'You will need to sign in again to access your account.',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(backgroundColor: AppColors.gambianRed),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.gambianRed,
+            ),
             child: const Text('Sign out'),
           ),
         ],
@@ -953,9 +1062,15 @@ class _SignOutSection extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.gambianRed.withValues(alpha: 0.35)),
+          border: Border.all(
+            color: AppColors.gambianRed.withValues(alpha: 0.35),
+          ),
           boxShadow: [
-            BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 12, offset: const Offset(0, 2)),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 12,
+              offset: const Offset(0, 2),
+            ),
           ],
         ),
         child: Row(
@@ -966,7 +1081,11 @@ class _SignOutSection extends StatelessWidget {
                 color: AppColors.gambianRed.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(Icons.logout_rounded, color: Colors.red.shade800, size: 22),
+              child: Icon(
+                Icons.logout_rounded,
+                color: Colors.red.shade800,
+                size: 22,
+              ),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -975,7 +1094,11 @@ class _SignOutSection extends StatelessWidget {
                 children: [
                   Text(
                     'Sign out',
-                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: Colors.red.shade900),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 16,
+                      color: Colors.red.shade900,
+                    ),
                   ),
                   const SizedBox(height: 2),
                   Text(
@@ -1009,7 +1132,11 @@ class _WalletTile extends StatelessWidget {
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 12, offset: const Offset(0, 2)),
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 12,
+              offset: const Offset(0, 2),
+            ),
           ],
         ),
         child: Row(
@@ -1017,17 +1144,23 @@ class _WalletTile extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppColors.gambianBlue.withOpacity(0.08),
+                color: AppColors.primaryColorBlack.withOpacity(0.08),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(Icons.account_balance_wallet_outlined, color: AppColors.gambianBlue),
+              child: const Icon(
+                Icons.account_balance_wallet_outlined,
+                color: AppColors.primaryColorBlack,
+              ),
             ),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Wallet', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                  const Text(
+                    'Wallet',
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                  ),
                   const SizedBox(height: 2),
                   Text(
                     'Manage balance, deposits, and withdrawals',

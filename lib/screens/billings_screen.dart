@@ -1,792 +1,5 @@
-// import 'package:flutter/material.dart';
-// import 'package:flutter_stripe/flutter_stripe.dart';
-// import 'package:provider/provider.dart';
-// import 'package:url_launcher/url_launcher.dart';
-
-// import '../api/escrow_api.dart';
-// import '../auth/auth_controller.dart';
-// import '../config/constants.dart';
-// import '../models/wallet_models.dart';
-// import '../theme/app_colors.dart';
-// import '../utils/snackbar.dart';
-// import '../widgets/glass_card.dart';
-
-// class BillingsScreen extends StatelessWidget {
-//   const BillingsScreen({super.key});
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return const _WalletBody();
-//   }
-// }
-
-// class _WalletBody extends StatefulWidget {
-//   const _WalletBody();
-
-//   @override
-//   State<_WalletBody> createState() => _WalletBodyState();
-// }
-
-// class _WalletBodyState extends State<_WalletBody> {
-//   bool _loading = true;
-//   int _activeTabIndex = 0;
-//   String _balance = '0';
-//   List<Map<String, dynamic>> _methods = const [];
-//   List<WalletTransferSummary> _transfers = const [];
-//   WalletTransferStats _stats =
-//       WalletTransferStats(transferCount: 0, totalDeposited: '0', totalWithdrawn: '0');
-
-//   String _publicError(Object error) {
-//     final message = error.toString();
-//     final lowered = message.toLowerCase();
-//     if (lowered.contains('secret') ||
-//         lowered.contains('token') ||
-//         lowered.contains('apikey') ||
-//         lowered.contains('database_url')) {
-//       return 'Payment request failed. Please try again.';
-//     }
-//     return message;
-//   }
-
-//   @override
-//   void initState() {
-//     super.initState();
-//     _refresh();
-//   }
-
-//   Future<void> _refresh() async {
-//     final auth = context.read<AuthController>();
-//     final token = auth.token;
-//     if (token == null || token.isEmpty) return;
-//     setState(() => _loading = true);
-//     try {
-//       final wallet = await getWallet(token);
-//       final methods = await listPaymentMethods(token);
-//       final stats = await getWalletTransferStats(token);
-//       final transfers = await getWalletTransfers(token, limit: 200);
-//       setState(() {
-//         _balance = wallet.balance;
-//         _methods = methods
-//             .map(
-//               (m) => {
-//                 'id': m.id,
-//                 'label': m.label,
-//                 'provider': m.provider,
-//                 'type': m.type,
-//                 'last4': m.last4,
-//                 'brand': m.brand,
-//                 'msisdn': m.msisdn,
-//               },
-//             )
-//             .toList();
-//         _transfers = transfers;
-//         _stats = stats;
-//       });
-//     } catch (e) {
-//       if (mounted) showSnack(context, _publicError(e));
-//     } finally {
-//       if (mounted) setState(() => _loading = false);
-//     }
-//   }
-
-//   Future<void> _addCard() async {
-//     final auth = context.read<AuthController>();
-//     final token = auth.token;
-//     if (token == null || token.isEmpty) return;
-
-//     try {
-//       final cfg = await getEscrowConfig(token);
-//       if (!mounted) return;
-//       final pk = (cfg['stripePublishableKey'] ?? '').toString().trim();
-//       if (pk.isEmpty) {
-//         showSnack(context, 'Card payments are unavailable');
-//         return;
-//       }
-//       Stripe.publishableKey = pk;
-//       final setup = await createStripeSetupIntent(token);
-//       if (!mounted) return;
-//       final setupIntentClientSecret = (setup['clientSecret'] ?? '').toString();
-//       final setupIntentId = (setup['setupIntentId'] ?? '').toString();
-//       if (setupIntentClientSecret.isEmpty || setupIntentId.isEmpty) {
-//         showSnack(context, 'Unable to initialize card setup');
-//         return;
-//       }
-
-//       await Stripe.instance.initPaymentSheet(
-//         paymentSheetParameters: SetupPaymentSheetParameters(
-//           setupIntentClientSecret: setupIntentClientSecret,
-//           merchantDisplayName: kAppName,
-//         ),
-//       );
-//       await Stripe.instance.presentPaymentSheet();
-//       if (!mounted) return;
-
-//       await completeStripeSetupIntent(token, setupIntentId: setupIntentId);
-//       if (!mounted) return;
-//       showSnack(context, 'Card added successfully');
-//       await _refresh();
-//     } catch (e) {
-//       if (mounted) showSnack(context, _publicError(e));
-//     }
-//   }
-
-//   Future<void> _depositWithStripe(double amount, String paymentMethodId) async {
-//     final auth = context.read<AuthController>();
-//     final token = auth.token;
-//     if (token == null || token.isEmpty) return;
-//     try {
-//       final res = await createStripeDepositIntent(
-//         token,
-//         amount: amount,
-//         paymentMethodId: paymentMethodId,
-//       );
-//       if (!mounted) return;
-//       final clientSecret = (res['clientSecret'] ?? '').toString();
-//       if (clientSecret.isEmpty) {
-//         showSnack(context, 'Deposit intent did not return a client secret');
-//         return;
-//       }
-
-//       await Stripe.instance.initPaymentSheet(
-//         paymentSheetParameters: SetupPaymentSheetParameters(
-//           paymentIntentClientSecret: clientSecret,
-//           merchantDisplayName: kAppName,
-//           allowsDelayedPaymentMethods: true,
-//         ),
-//       );
-//       await Stripe.instance.presentPaymentSheet();
-//       if (!mounted) return;
-
-//       showSnack(context, 'Payment submitted. Wallet will update after confirmation.');
-//       await _refresh();
-//     } catch (e) {
-//       if (mounted) showSnack(context, _publicError(e));
-//     }
-//   }
-
-//   Future<void> _depositWithMobileWallet(
-//     double amount,
-//   ) async {
-//     final auth = context.read<AuthController>();
-//     final token = auth.token;
-//     if (token == null || token.isEmpty) return;
-//     try {
-//       final res = await createModernPayDepositIntent(
-//         token,
-//         amount: amount,
-//         clientRequestId: DateTime.now().millisecondsSinceEpoch.toString(),
-//       );
-//       if (!mounted) return;
-//       final checkoutUrl = (res['checkoutUrl'] ?? '').toString();
-//       final transferId = (res['transferId'] ?? '').toString();
-//       if (checkoutUrl.isEmpty || transferId.isEmpty) {
-//         showSnack(context, 'Unable to start mobile wallet checkout');
-//         return;
-//       }
-
-//       await launchUrl(Uri.parse(checkoutUrl), mode: LaunchMode.externalApplication);
-//       if (!mounted) return;
-
-//       final shouldConfirm = await showDialog<bool>(
-//         context: context,
-//         builder: (context) => AlertDialog(
-//           title: const Text('Confirm Mobile Payment'),
-//           content: const Text(
-//             'After completing the payment in Modem Pay, tap confirm to credit your wallet.',
-//           ),
-//           actions: [
-//             TextButton(
-//               onPressed: () => Navigator.pop(context, false),
-//               child: const Text('Later'),
-//             ),
-//             FilledButton(
-//               onPressed: () => Navigator.pop(context, true),
-//               child: const Text('Confirm now'),
-//             ),
-//           ],
-//         ),
-//       );
-//       if (shouldConfirm != true || !mounted) return;
-
-//       final confirmed = await confirmModernPayDeposit(token, transferId: transferId);
-//       if (!mounted) return;
-//       final status = (confirmed['status'] ?? '').toString();
-//       if (status == 'SUCCEEDED') {
-//         showSnack(context, 'Wallet credited successfully.');
-//         await _refresh();
-//         return;
-//       }
-//       if (status == 'FAILED' || status == 'CANCELED') {
-//         showSnack(context, 'Mobile wallet payment was not successful.');
-//         return;
-//       }
-//       showSnack(context, 'Payment is still processing. Please confirm again shortly.');
-//     } catch (e) {
-//       if (mounted) showSnack(context, _publicError(e));
-//     }
-//   }
-
-//   Future<void> _addFunds() async {
-//     final source = await showDialog<String>(
-//       context: context,
-//       builder: (context) => AlertDialog(
-//         title: const Text('Add funds'),
-//         content: const Text('Select how you want to deposit money into your wallet.'),
-//         actions: [
-//           TextButton(
-//             onPressed: () => Navigator.pop(context),
-//             child: const Text('Cancel'),
-//           ),
-//           OutlinedButton(
-//             onPressed: () => Navigator.pop(context, 'mobile'),
-//             child: const Text('Mobile wallet'),
-//           ),
-//           FilledButton(
-//             onPressed: () => Navigator.pop(context, 'card'),
-//             child: const Text('Card'),
-//           ),
-//         ],
-//       ),
-//     );
-//     if (!mounted || source == null) return;
-
-//     final options = _methods.where((m) => m['provider'] == 'STRIPE').toList();
-//     if (source == 'card' && options.isEmpty) {
-//       showSnack(
-//         context,
-//         'Add a card first.',
-//       );
-//       return;
-//     }
-
-//     String? selectedMethod;
-//     if (source != 'mobile') {
-//       selectedMethod = await showDialog<String>(
-//         context: context,
-//         builder: (context) => _MethodSelectionDialog(
-//           title: 'Select card',
-//           methods: options,
-//         ),
-//       );
-//       if (!mounted || selectedMethod == null) return;
-//     }
-
-//     final amountController = TextEditingController();
-//     final amountRaw = await showDialog<String>(
-//       context: context,
-//       builder: (context) => AlertDialog(
-//         title: const Text('Deposit amount'),
-//         content: TextField(
-//           controller: amountController,
-//           keyboardType: const TextInputType.numberWithOptions(decimal: true),
-//           decoration: const InputDecoration(
-//             labelText: 'Amount (GMD)',
-//             hintText: 'e.g. 250',
-//           ),
-//         ),
-//         actions: [
-//           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-//           FilledButton(
-//             onPressed: () => Navigator.pop(context, amountController.text.trim()),
-//             child: const Text('Continue'),
-//           ),
-//         ],
-//       ),
-//     );
-//     if (!mounted || amountRaw == null || amountRaw.isEmpty) return;
-//     final amount = double.tryParse(amountRaw);
-//     if (amount == null || amount <= 0) {
-//       showSnack(context, 'Invalid amount');
-//       return;
-//     }
-
-//     if (source == 'mobile') {
-//       await _depositWithMobileWallet(amount);
-//     } else {
-//       await _depositWithStripe(amount, selectedMethod!);
-//     }
-//   }
-
-//   Future<void> _requestPayout() async {
-//     final auth = context.read<AuthController>();
-//     final token = auth.token;
-//     if (token == null || token.isEmpty) return;
-
-//     final controller = TextEditingController();
-//     final amountRaw = await showDialog<String>(
-//       context: context,
-//       builder: (context) => AlertDialog(
-//         title: const Text('Withdraw funds'),
-//         content: TextField(
-//           controller: controller,
-//           keyboardType: const TextInputType.numberWithOptions(decimal: true),
-//           decoration: const InputDecoration(
-//             labelText: 'Amount (GMD)',
-//             hintText: 'e.g. 100',
-//           ),
-//         ),
-//         actions: [
-//           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-//           FilledButton(onPressed: () => Navigator.pop(context, controller.text.trim()), child: const Text('Request')),
-//         ],
-//       ),
-//     );
-//     if (!mounted) return;
-//     if (amountRaw == null || amountRaw.isEmpty) return;
-//     final amount = double.tryParse(amountRaw);
-//     if (amount == null || amount <= 0) {
-//       showSnack(context, 'Invalid amount');
-//       return;
-//     }
-
-//     try {
-//       await requestPayout(
-//         token,
-//         amount: amount,
-//         provider: 'MODERNPAY',
-//         providerPayload: {'note': 'MVP: payout execution not wired yet'},
-//       );
-//       if (!mounted) return;
-//       showSnack(context, 'Payout requested (processing).');
-//       await _refresh();
-//     } catch (e) {
-//       if (mounted) showSnack(context, _publicError(e));
-//     }
-//   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     final theme = Theme.of(context);
-//     final cardMethods = _methods.where((m) => m['provider'] == 'STRIPE').toList();
-//     final mobileMethods =
-//         _methods.where((m) => m['provider'] == 'MODERNPAY').toList();
-//     final totalDeposited = double.tryParse(_stats.totalDeposited) ?? 0;
-//     final totalWithdrawn = double.tryParse(_stats.totalWithdrawn) ?? 0;
-
-//     return Scaffold(
-//       appBar: AppBar(title: const Text('Wallet')),
-//       body: Stack(
-//         fit: StackFit.expand,
-//         children: [
-//           const DecoratedBox(
-//             decoration: BoxDecoration(gradient: AppColors.pageBackground),
-//             child: SizedBox.expand(),
-//           ),
-//           SafeArea(
-//             child: RefreshIndicator(
-//               onRefresh: _refresh,
-//               child: ListView(
-//                 physics: const AlwaysScrollableScrollPhysics(),
-//                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
-//                 children: [
-//           // Web-parity hero wallet card
-//           Container(
-//             margin: const EdgeInsets.only(bottom: 16),
-//             decoration: BoxDecoration(
-//               color: AppColors.gambianBlue,
-//               borderRadius: BorderRadius.circular(18),
-//               boxShadow: [
-//                 BoxShadow(
-//                   color: AppColors.gambianBlue.withValues(alpha: 0.35),
-//                   blurRadius: 22,
-//                   offset: const Offset(0, 10),
-//                 ),
-//               ],
-//             ),
-//             child: Stack(
-//               children: [
-//                 Positioned(
-//                   right: 10,
-//                   top: 10,
-//                   child: IconButton(
-//                     onPressed: _loading ? null : _refresh,
-//                     icon: Icon(
-//                       Icons.refresh,
-//                       color: Colors.white.withValues(alpha: 0.9),
-//                     ),
-//                   ),
-//                 ),
-//                 Padding(
-//                   padding: const EdgeInsets.fromLTRB(16, 18, 16, 16),
-//                   child: Column(
-//                     crossAxisAlignment: CrossAxisAlignment.start,
-//                     children: [
-//                       Text(
-//                         'Available Balance',
-//                         style: TextStyle(
-//                           color: Colors.white.withValues(alpha: 0.75),
-//                           fontWeight: FontWeight.w600,
-//                           fontSize: 13,
-//                           height: 1.2,
-//                         ),
-//                       ),
-//                       const SizedBox(height: 8),
-//                       Text(
-//                         '$kCurrencyPrefix$_balance',
-//                         style: const TextStyle(
-//                           color: Colors.white,
-//                           fontSize: 26,
-//                           fontWeight: FontWeight.w800,
-//                           letterSpacing: -0.5,
-//                           height: 1.05,
-//                           decoration: TextDecoration.none,
-//                         ),
-//                       ),
-//                       const SizedBox(height: 8),
-//                       Wrap(
-//                         spacing: 10,
-//                         runSpacing: 6,
-//                         children: [
-//                           _MiniCount(text: '${cardMethods.length} cards'),
-//                           _MiniCount(text: '${mobileMethods.length} mobile'),
-//                           _MiniCount(text: '${_stats.transferCount} transactions'),
-//                         ],
-//                       ),
-//                       const SizedBox(height: 14),
-//                       Row(
-//                         children: [
-//                           Expanded(
-//                             child: FilledButton(
-//                               onPressed: _loading ? null : _addFunds,
-//                               style: FilledButton.styleFrom(
-//                                 backgroundColor: AppColors.gambianGold,
-//                                 foregroundColor: const Color(0xFF3A2A00),
-//                                 padding:
-//                                     const EdgeInsets.symmetric(vertical: 12),
-//                               ),
-//                               child: const Text('Deposit'),
-//                             ),
-//                           ),
-//                           const SizedBox(width: 10),
-//                           Expanded(
-//                             child: OutlinedButton(
-//                               onPressed: _loading ? null : _requestPayout,
-//                               style: OutlinedButton.styleFrom(
-//                                 foregroundColor: Colors.white,
-//                                 side: BorderSide(
-//                                   color: Colors.white.withValues(alpha: 0.35),
-//                                 ),
-//                                 padding:
-//                                     const EdgeInsets.symmetric(vertical: 12),
-//                               ),
-//                               child: const Text('Withdraw'),
-//                             ),
-//                           ),
-//                         ],
-//                       ),
-//                       const SizedBox(height: 14),
-//                       Row(
-//                         children: [
-//                           Expanded(
-//                             child: _StatPill(
-//                               label: 'Total Deposited',
-//                               value:
-//                                   '$kCurrencyPrefix${totalDeposited.toStringAsFixed(2)}',
-//                             ),
-//                           ),
-//                           const SizedBox(width: 10),
-//                           Expanded(
-//                             child: _StatPill(
-//                               label: 'Total Withdrawn',
-//                               value:
-//                                   '$kCurrencyPrefix${totalWithdrawn.toStringAsFixed(2)}',
-//                             ),
-//                           ),
-//                         ],
-//                       ),
-//                     ],
-//                   ),
-//                 ),
-//               ],
-//             ),
-//           ),
-
-//           SegmentedButton<int>(
-//             style: ButtonStyle(
-//               visualDensity: VisualDensity.compact,
-//               padding: WidgetStateProperty.all(
-//                 const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-//               ),
-//               foregroundColor: WidgetStateProperty.resolveWith(
-//                 (s) =>
-//                     s.contains(WidgetState.selected) ? Colors.white : Colors.grey.shade800,
-//               ),
-//               backgroundColor: WidgetStateProperty.resolveWith(
-//                 (s) => s.contains(WidgetState.selected)
-//                     ? AppColors.gambianBlue
-//                     : Colors.white.withValues(alpha: 0.92),
-//               ),
-//               side: WidgetStateProperty.all(BorderSide(color: Colors.grey.shade300)),
-//             ),
-//             segments: const [
-//               ButtonSegment(value: 0, label: Text('Overview')),
-//               ButtonSegment(value: 1, label: Text('Transactions')),
-//             ],
-//             selected: {_activeTabIndex},
-//             onSelectionChanged: (selection) {
-//               setState(() => _activeTabIndex = selection.first);
-//             },
-//           ),
-//           const SizedBox(height: 12),
-//           if (_activeTabIndex == 0) ...[
-//             Row(
-//               children: [
-//                 Expanded(
-//                   child: Text(
-//                     'Payment Methods',
-//                     style: theme.textTheme.titleMedium?.copyWith(
-//                       fontWeight: FontWeight.w800,
-//                       color: Colors.grey.shade900,
-//                     ),
-//                   ),
-//                 ),
-//                 const SizedBox(width: 8),
-//                 OutlinedButton.icon(
-//                   onPressed: _loading ? null : _addCard,
-//                   icon: const Icon(Icons.credit_card, size: 18),
-//                   label: const Text('Add Card'),
-//                 ),
-//               ],
-//             ),
-//             const SizedBox(height: 10),
-//             if (_methods.isEmpty)
-//               GlassCard(
-//                 padding: const EdgeInsets.all(18),
-//                 child: Text(
-//                   'No payment methods yet. Add a card to start transacting.',
-//                   style: theme.textTheme.bodyMedium?.copyWith(
-//                     fontSize: 14,
-//                     height: 1.4,
-//                     color: Colors.grey.shade700,
-//                   ),
-//                 ),
-//               )
-//             else
-//               ..._methods.map(
-//                 (m) => Padding(
-//                   padding: const EdgeInsets.only(bottom: 8),
-//                   child: GlassCard(
-//                     child: Row(
-//                       children: [
-//                         Icon(
-//                           (m['provider'] == 'STRIPE') ? Icons.credit_card : Icons.phone_iphone,
-//                           color: AppColors.gambianBlue,
-//                         ),
-//                         const SizedBox(width: 10),
-//                         Expanded(
-//                           child: Column(
-//                             crossAxisAlignment: CrossAxisAlignment.start,
-//                             children: [
-//                               Text(
-//                                 (m['label'] ?? '').toString().isEmpty ? 'Payment method' : (m['label'] ?? '').toString(),
-//                                 style: const TextStyle(fontWeight: FontWeight.w600),
-//                               ),
-//                               const SizedBox(height: 2),
-//                               Text(
-//                                 m['provider'] == 'STRIPE'
-//                                     ? '${m['brand'] ?? 'card'} •••• ${m['last4'] ?? ''}'
-//                                     : (m['msisdn'] ?? '').toString(),
-//                                 style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
-//                               ),
-//                             ],
-//                           ),
-//                         ),
-//                         Text(
-//                           (m['provider'] ?? '').toString(),
-//                           style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
-//                         ),
-//                       ],
-//                     ),
-//                   ),
-//                 ),
-//               ),
-//           ] else ...[
-//             Text(
-//               'All Transactions',
-//               style: theme.textTheme.titleMedium?.copyWith(
-//                 fontWeight: FontWeight.w800,
-//                 color: Colors.grey.shade900,
-//               ),
-//             ),
-//             const SizedBox(height: 10),
-//             if (_transfers.isEmpty)
-//               GlassCard(
-//                 padding: const EdgeInsets.all(18),
-//                 child: Text(
-//                   'No transactions yet.',
-//                   style: theme.textTheme.bodyMedium?.copyWith(
-//                     fontSize: 14,
-//                     height: 1.4,
-//                     color: Colors.grey.shade700,
-//                   ),
-//                 ),
-//               )
-//             else
-//               ..._transfers.map(
-//                 (t) => Padding(
-//                   padding: const EdgeInsets.only(bottom: 8),
-//                   child: GlassCard(
-//                     child: Row(
-//                       children: [
-//                         Icon(
-//                           t.kind == 'DEPOSIT'
-//                               ? Icons.north_east
-//                               : Icons.south_west,
-//                           color: t.kind == 'DEPOSIT'
-//                               ? AppColors.gambianGreen
-//                               : AppColors.gambianRed,
-//                         ),
-//                         const SizedBox(width: 10),
-//                         Expanded(
-//                           child: Column(
-//                             crossAxisAlignment: CrossAxisAlignment.start,
-//                             children: [
-//                               Text(
-//                                 '${t.kind == 'DEPOSIT' ? 'Deposit' : 'Withdrawal'} via ${t.provider}',
-//                                 style:
-//                                     const TextStyle(fontWeight: FontWeight.w700),
-//                               ),
-//                               const SizedBox(height: 2),
-//                               Text(
-//                                 '${t.createdAt.toLocal()}',
-//                                 style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
-//                               ),
-//                             ],
-//                           ),
-//                         ),
-//                         Text(
-//                           '${t.kind == 'DEPOSIT' ? '+' : '-'}$kCurrencyPrefix${t.amount}',
-//                           style: const TextStyle(fontWeight: FontWeight.w800),
-//                         ),
-//                       ],
-//                     ),
-//                   ),
-//                 ),
-//               ),
-//           ],
-//                 ],
-//               ),
-//             ),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-// }
-
-// class _MiniCount extends StatelessWidget {
-//   const _MiniCount({required this.text});
-//   final String text;
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Container(
-//       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-//       decoration: BoxDecoration(
-//         color: Colors.white.withValues(alpha: 0.08),
-//         borderRadius: BorderRadius.circular(999),
-//         border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
-//       ),
-//       child: Text(
-//         text,
-//         style: TextStyle(
-//           color: Colors.white.withValues(alpha: 0.8),
-//           fontWeight: FontWeight.w600,
-//           fontSize: 12,
-//         ),
-//       ),
-//     );
-//   }
-// }
-
-// class _StatPill extends StatelessWidget {
-//   const _StatPill({required this.label, required this.value});
-//   final String label;
-//   final String value;
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Container(
-//       padding: const EdgeInsets.all(12),
-//       decoration: BoxDecoration(
-//         color: Colors.white.withValues(alpha: 0.08),
-//         borderRadius: BorderRadius.circular(14),
-//         border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
-//       ),
-//       child: Column(
-//         crossAxisAlignment: CrossAxisAlignment.start,
-//         children: [
-//           Text(
-//             label,
-//             style: TextStyle(
-//               color: Colors.white.withValues(alpha: 0.65),
-//               fontSize: 11,
-//               fontWeight: FontWeight.w600,
-//             ),
-//           ),
-//           const SizedBox(height: 6),
-//           Text(
-//             value,
-//             style: const TextStyle(
-//               color: Colors.white,
-//               fontSize: 16,
-//               fontWeight: FontWeight.w800,
-//             ),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-// }
-
-// class _MethodSelectionDialog extends StatelessWidget {
-//   const _MethodSelectionDialog({
-//     required this.title,
-//     required this.methods,
-//   });
-
-//   final String title;
-//   final List<Map<String, dynamic>> methods;
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return AlertDialog(
-//       title: Text(title),
-//       content: SizedBox(
-//         width: 420,
-//         child: methods.isEmpty
-//             ? const Text('No methods available')
-//             : ListView.builder(
-//                 shrinkWrap: true,
-//                 itemCount: methods.length,
-//                 itemBuilder: (context, index) {
-//                   final m = methods[index];
-//                   final isStripe = m['provider'] == 'STRIPE';
-//                   final subtitle = isStripe
-//                       ? '${m['brand'] ?? 'card'} •••• ${m['last4'] ?? ''}'
-//                       : (m['msisdn'] ?? m['modernpayMsisdn'] ?? '').toString();
-//                   final title = (m['label'] ?? '').toString().isEmpty
-//                       ? (isStripe ? 'Card' : 'Mobile wallet')
-//                       : (m['label'] ?? '').toString();
-//                   return ListTile(
-//                     leading: Icon(isStripe ? Icons.credit_card : Icons.phone_iphone),
-//                     title: Text(title),
-//                     subtitle: Text(subtitle),
-//                     onTap: () => Navigator.pop(context, (m['id'] ?? '').toString()),
-//                   );
-//                 },
-//               ),
-//       ),
-//       actions: [
-//         TextButton(
-//           onPressed: () => Navigator.pop(context),
-//           child: const Text('Cancel'),
-//         ),
-//       ],
-//     );
-//   }
-// }
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -797,6 +10,7 @@ import '../config/constants.dart';
 import '../models/wallet_models.dart';
 import '../theme/app_colors.dart';
 import '../utils/snackbar.dart';
+import '../utils/currency.dart';
 import '../widgets/glass_card.dart';
 
 class BillingsScreen extends StatelessWidget {
@@ -822,8 +36,11 @@ class _WalletBody extends StatefulWidget {
 class _WalletBodyState extends State<_WalletBody>
     with SingleTickerProviderStateMixin {
   bool _loading = true;
+  bool _historyLoading = false;
+  bool _balanceHidden = false;
   int _activeTabIndex = 0;
   String _balance = '0';
+  String? _walletCurrency;
   List<Map<String, dynamic>> _methods = const [];
   List<WalletTransferSummary> _transfers = const [];
   List<WalletLedgerEntry> _ledger = const [];
@@ -837,14 +54,26 @@ class _WalletBodyState extends State<_WalletBody>
   late final Animation<double> _fadeAnim;
 
   String _publicError(Object error) {
-    final lowered = error.toString().toLowerCase();
-    if (lowered.contains('secret') ||
+    final raw = error.toString();
+    final lowered = raw.toLowerCase();
+    if (error is PlatformException ||
+        lowered.contains('secret') ||
         lowered.contains('token') ||
         lowered.contains('apikey') ||
-        lowered.contains('database_url')) {
+        lowered.contains('database_url') ||
+        lowered.contains('flutter_stripe') ||
+        lowered.contains('initialization failed') ||
+        lowered.contains('flutterfragmentactivity') ||
+        lowered.contains('mainactivity')) {
       return 'Payment request failed. Please try again.';
     }
-    return error.toString();
+    return raw;
+  }
+
+  String _setupIntentIdFromClientSecret(String clientSecret) {
+    final idx = clientSecret.indexOf('_secret_');
+    if (idx <= 0) return '';
+    return clientSecret.substring(0, idx);
   }
 
   @override
@@ -867,33 +96,43 @@ class _WalletBodyState extends State<_WalletBody>
   Future<void> _refresh() async {
     final auth = context.read<AuthController>();
     final token = auth.token;
-    if (token == null || token.isEmpty) return;
+    if (token == null || token.isEmpty) {
+      setState(() => _loading = false);
+      return;
+    }
     setState(() => _loading = true);
     _fadeCtrl.reset();
     try {
-      final wallet = await getWallet(token);
-      final methods = await listPaymentMethods(token);
-      final stats = await getWalletTransferStats(token);
-      final transfers = await getWalletTransfers(token, limit: 200);
-      final ledger = await getWalletLedger(token, limit: 200);
+      final results = await Future.wait<Object>([
+        getWallet(token),
+        listPaymentMethods(token),
+        getWalletTransferStats(token),
+      ]);
+      final wallet = results[0] as WalletSummary;
+      final methods = results[1] as List<PaymentMethodSummary>;
+      final stats = results[2] as WalletTransferStats;
+      if (!mounted) return;
       setState(() {
         _balance = wallet.balance;
-        _ledger = ledger;
+        _walletCurrency = wallet.currency;
         _methods = methods
-            .map((m) => {
-                  'id': m.id,
-                  'label': m.label,
-                  'provider': m.provider,
-                  'type': m.type,
-                  'last4': m.last4,
-                  'brand': m.brand,
-                  'msisdn': m.msisdn,
-                })
+            .map(
+              (m) => {
+                'id': m.id,
+                'label': m.label,
+                'provider': m.provider,
+                'type': m.type,
+                'last4': m.last4,
+                'brand': m.brand,
+                'msisdn': m.msisdn,
+              },
+            )
             .toList();
-        _transfers = transfers;
         _stats = stats;
+        _loading = false;
       });
       _fadeCtrl.forward();
+      _refreshHistoryInBackground(token);
     } catch (e) {
       if (mounted) showSnack(context, _publicError(e));
     } finally {
@@ -901,70 +140,108 @@ class _WalletBodyState extends State<_WalletBody>
     }
   }
 
-  // ── Payment method actions ────────────────
+  void _refreshHistoryInBackground(String token) {
+    _refreshHistory(token);
+  }
 
-  Future<void> _addCard() async {
-    final auth = context.read<AuthController>();
-    final token = auth.token;
-    if (token == null || token.isEmpty) return;
+  Future<void> _refreshHistory(String token) async {
+    if (_historyLoading) return;
+    setState(() => _historyLoading = true);
     try {
-      final cfg = await getEscrowConfig(token);
+      final results = await Future.wait<Object>([
+        getWalletTransfers(token, limit: 100),
+        getWalletLedger(token, limit: 100),
+      ]);
       if (!mounted) return;
-      final pk = (cfg['stripePublishableKey'] ?? '').toString().trim();
-      if (pk.isEmpty) {
-        showSnack(context, 'Card payments are unavailable');
-        return;
-      }
-      Stripe.publishableKey = pk;
-      final setup = await createStripeSetupIntent(token);
-      if (!mounted) return;
-      final clientSecret = (setup['clientSecret'] ?? '').toString();
-      final setupIntentId = (setup['setupIntentId'] ?? '').toString();
-      if (clientSecret.isEmpty || setupIntentId.isEmpty) {
-        showSnack(context, 'Unable to initialise card setup');
-        return;
-      }
-      await Stripe.instance.initPaymentSheet(
-        paymentSheetParameters: SetupPaymentSheetParameters(
-          setupIntentClientSecret: clientSecret,
-          merchantDisplayName: kAppName,
-        ),
-      );
-      await Stripe.instance.presentPaymentSheet();
-      if (!mounted) return;
-      await completeStripeSetupIntent(token, setupIntentId: setupIntentId);
-      if (!mounted) return;
-      showSnack(context, 'Card added successfully');
-      await _refresh();
+      setState(() {
+        _transfers = results[0] as List<WalletTransferSummary>;
+        _ledger = results[1] as List<WalletLedgerEntry>;
+      });
     } catch (e) {
       if (mounted) showSnack(context, _publicError(e));
+    } finally {
+      if (mounted) setState(() => _historyLoading = false);
     }
   }
 
-  Future<void> _depositWithStripe(
-      double amount, String paymentMethodId) async {
+  // ── Payment method actions ────────────────
+
+  Future<void> _addCard() async {
     final token = context.read<AuthController>().token;
     if (token == null || token.isEmpty) return;
+
+    setState(() => _loading = true);
     try {
-      final res = await createStripeDepositIntent(token,
-          amount: amount, paymentMethodId: paymentMethodId);
-      if (!mounted) return;
-      final clientSecret = (res['clientSecret'] ?? '').toString();
-      if (clientSecret.isEmpty) {
-        showSnack(context, 'Deposit intent did not return a client secret');
+      final config = await getEscrowConfig(token);
+      final publishableKey = (config['stripePublishableKey'] ?? '')
+          .toString()
+          .trim();
+      if (publishableKey.isEmpty) {
+        if (!mounted) return;
+        showSnack(context, 'Card payments are not configured yet.');
         return;
       }
+
+      final setup = await createStripeSetupIntent(token);
+      final clientSecret = (setup['clientSecret'] ?? '').toString();
+      final setupIntentId = (setup['setupIntentId'] ?? '').toString().trim();
+      final resolvedSetupIntentId = setupIntentId.isNotEmpty
+          ? setupIntentId
+          : _setupIntentIdFromClientSecret(clientSecret);
+      if (clientSecret.isEmpty || resolvedSetupIntentId.isEmpty) {
+        if (!mounted) return;
+        showSnack(context, 'Unable to start card setup. Please try again.');
+        return;
+      }
+
+      Stripe.publishableKey = publishableKey;
+      await Stripe.instance.applySettings();
       await Stripe.instance.initPaymentSheet(
         paymentSheetParameters: SetupPaymentSheetParameters(
-          paymentIntentClientSecret: clientSecret,
           merchantDisplayName: kAppName,
-          allowsDelayedPaymentMethods: true,
+          setupIntentClientSecret: clientSecret,
+          returnURL: 'safetrade://stripe-redirect',
+          allowsDelayedPaymentMethods: false,
         ),
       );
       await Stripe.instance.presentPaymentSheet();
+      await completeStripeSetupIntent(
+        token,
+        setupIntentId: resolvedSetupIntentId,
+      );
       if (!mounted) return;
-      showSnack(
-          context, 'Payment submitted. Wallet will update after confirmation.');
+      showSnack(context, 'Card saved successfully.');
+      await _refresh();
+    } on StripeException catch (e) {
+      if (!mounted) return;
+      final message = e.error.localizedMessage ?? 'Card setup was cancelled.';
+      showSnack(context, message);
+    } catch (e) {
+      if (mounted) showSnack(context, _publicError(e));
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _depositWithStripe(double amount, String paymentMethodId) async {
+    final token = context.read<AuthController>().token;
+    if (token == null || token.isEmpty) return;
+    try {
+      final res = await confirmSavedCardStripeDeposit(
+        token,
+        amount: amount,
+        paymentMethodId: paymentMethodId,
+        clientRequestId: 'card-deposit-${DateTime.now().millisecondsSinceEpoch}',
+      );
+      if (!mounted) return;
+      final credited = res['credited'] == true;
+      final status = (res['status'] ?? '').toString().toUpperCase();
+      if (credited || status == 'SUCCEEDED') {
+        showSnack(context, 'Wallet credited successfully.');
+        await _refresh();
+        return;
+      }
+      showSnack(context, 'Card payment is $status. Please try again or use mobile wallet.');
       await _refresh();
     } catch (e) {
       if (mounted) showSnack(context, _publicError(e));
@@ -975,10 +252,11 @@ class _WalletBodyState extends State<_WalletBody>
     final token = context.read<AuthController>().token;
     if (token == null || token.isEmpty) return;
     try {
-      final res = await createModernPayDepositIntent(token,
-          amount: amount,
-          clientRequestId:
-              DateTime.now().millisecondsSinceEpoch.toString());
+      final res = await createModernPayDepositIntent(
+        token,
+        amount: amount,
+        clientRequestId: DateTime.now().millisecondsSinceEpoch.toString(),
+      );
       if (!mounted) return;
       final checkoutUrl = (res['checkoutUrl'] ?? '').toString();
       final transferId = (res['transferId'] ?? '').toString();
@@ -986,8 +264,10 @@ class _WalletBodyState extends State<_WalletBody>
         showSnack(context, 'Unable to start mobile wallet checkout');
         return;
       }
-      await launchUrl(Uri.parse(checkoutUrl),
-          mode: LaunchMode.externalApplication);
+      await launchUrl(
+        Uri.parse(checkoutUrl),
+        mode: LaunchMode.externalApplication,
+      );
       if (!mounted) return;
       final confirmed = await showDialog<bool>(
         context: context,
@@ -1000,8 +280,10 @@ class _WalletBodyState extends State<_WalletBody>
         ),
       );
       if (confirmed != true || !mounted) return;
-      final result =
-          await confirmModernPayDeposit(token, transferId: transferId);
+      final result = await confirmModernPayDeposit(
+        token,
+        transferId: transferId,
+      );
       if (!mounted) return;
       final status = (result['status'] ?? '').toString();
       if (status == 'SUCCEEDED') {
@@ -1014,7 +296,9 @@ class _WalletBodyState extends State<_WalletBody>
         return;
       }
       showSnack(
-          context, 'Payment is still processing. Please confirm again shortly.');
+        context,
+        'Payment is still processing. Please confirm again shortly.',
+      );
     } catch (e) {
       if (mounted) showSnack(context, _publicError(e));
     }
@@ -1028,8 +312,9 @@ class _WalletBodyState extends State<_WalletBody>
     );
     if (!mounted || source == null) return;
 
-    final stripeOptions =
-        _methods.where((m) => m['provider'] == 'STRIPE').toList();
+    final stripeOptions = _methods
+        .where((m) => m['provider'] == 'STRIPE')
+        .toList();
     if (source == 'card' && stripeOptions.isEmpty) {
       showSnack(context, 'Add a card first before depositing.');
       return;
@@ -1052,7 +337,7 @@ class _WalletBodyState extends State<_WalletBody>
       builder: (ctx) => _AmountDialog(
         title: 'Deposit amount',
         hint: 'e.g. 250',
-        currency: 'GMD',
+        currency: _walletCurrency,
       ),
     );
     if (!mounted || amount == null) return;
@@ -1073,16 +358,18 @@ class _WalletBodyState extends State<_WalletBody>
       builder: (ctx) => _AmountDialog(
         title: 'Withdraw funds',
         hint: 'e.g. 100',
-        currency: 'GMD',
+        currency: _walletCurrency,
       ),
     );
     if (!mounted || amount == null) return;
 
     try {
-      await requestPayout(token,
-          amount: amount,
-          provider: 'MODERNPAY',
-          providerPayload: {'note': 'MVP: payout execution not wired yet'});
+      await requestPayout(
+        token,
+        amount: amount,
+        provider: 'MODERNPAY',
+        providerPayload: {'note': 'MVP: payout execution not wired yet'},
+      );
       if (!mounted) return;
       showSnack(context, 'Payout requested (processing).');
       await _refresh();
@@ -1096,40 +383,42 @@ class _WalletBodyState extends State<_WalletBody>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cardMethods =
-        _methods.where((m) => m['provider'] == 'STRIPE').toList();
-    final mobileMethods =
-        _methods.where((m) => m['provider'] == 'MODERNPAY').toList();
+    final cardMethods = _methods
+        .where((m) => m['provider'] == 'STRIPE')
+        .toList();
+    final mobileMethods = _methods
+        .where((m) => m['provider'] == 'MODERNPAY')
+        .toList();
     final totalDeposited = double.tryParse(_stats.totalDeposited) ?? 0;
     final totalWithdrawn = double.tryParse(_stats.totalWithdrawn) ?? 0;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6FB),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: false,
-        title: const Text(
-          'Wallet',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w800,
-            letterSpacing: -0.4,
-            color: Color(0xFF0D1B3E),
-          ),
-        ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: _RefreshIconButton(
-              loading: _loading,
-              onPressed: _refresh,
-            ),
-          ),
-        ],
-      ),
+      // appBar: AppBar(
+      //   backgroundColor: Colors.transparent,
+      //   elevation: 0,
+      //   centerTitle: false,
+      //   // title: const Text(
+      //   //   'Wallet',
+      //   //   style: TextStyle(
+      //   //     fontSize: 20,
+      //   //     fontWeight: FontWeight.w800,
+      //   //     letterSpacing: -0.4,
+      //   //     color: Color(0xFF0D1B3E),
+      //   //   ),
+      //   // ),
+      //   actions: [
+      //     Padding(
+      //       padding: const EdgeInsets.only(right: 8),
+      //       child: _RefreshIconButton(
+      //         loading: _loading,
+      //         onPressed: _refresh,
+      //       ),
+      //     ),
+      //   ],
+      // ),
       body: RefreshIndicator(
-        color: AppColors.gambianBlue,
+        color: AppColors.primaryColorBlack,
         onRefresh: _refresh,
         child: FadeTransition(
           opacity: _loading ? const AlwaysStoppedAnimation(1) : _fadeAnim,
@@ -1140,14 +429,19 @@ class _WalletBodyState extends State<_WalletBody>
               // ── Hero balance card ──────────────
               _HeroCard(
                 balance: _balance,
+                balanceHidden: _balanceHidden,
                 cardCount: cardMethods.length,
                 mobileCount: mobileMethods.length,
                 txCount: _stats.transferCount,
                 totalDeposited: totalDeposited,
                 totalWithdrawn: totalWithdrawn,
                 loading: _loading,
+                onToggleBalance: () {
+                  setState(() => _balanceHidden = !_balanceHidden);
+                },
                 onDeposit: _addFunds,
                 onWithdraw: _requestPayout,
+                currency: _walletCurrency,
               ),
 
               const SizedBox(height: 20),
@@ -1172,8 +466,9 @@ class _WalletBodyState extends State<_WalletBody>
                 _TransactionsTab(
                   transfers: _transfers,
                   ledger: _ledger,
-                  loading: _loading,
+                  loading: _historyLoading,
                   theme: theme,
+                  currency: _walletCurrency,
                 ),
             ],
           ),
@@ -1190,43 +485,49 @@ class _WalletBodyState extends State<_WalletBody>
 class _HeroCard extends StatelessWidget {
   const _HeroCard({
     required this.balance,
+    required this.balanceHidden,
     required this.cardCount,
     required this.mobileCount,
     required this.txCount,
     required this.totalDeposited,
     required this.totalWithdrawn,
     required this.loading,
+    required this.onToggleBalance,
     required this.onDeposit,
     required this.onWithdraw,
+    required this.currency,
   });
 
   final String balance;
+  final bool balanceHidden;
   final int cardCount;
   final int mobileCount;
   final int txCount;
   final double totalDeposited;
   final double totalWithdrawn;
   final bool loading;
+  final VoidCallback onToggleBalance;
   final VoidCallback onDeposit;
   final VoidCallback onWithdraw;
+  final String? currency;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF0A2463), Color(0xFF1A3A7A)],
+          colors: [AppColors.primaryColorBlack, AppColors.primaryColorBlack],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF0A2463).withValues(alpha: 0.40),
-            blurRadius: 32,
-            offset: const Offset(0, 14),
-          ),
-        ],
+        // boxShadow: [
+        //   BoxShadow(
+        //     color:AppColors.primaryColorBlack,
+        //     blurRadius: 32,
+        //     offset: const Offset(0, 14),
+        //   ),
+        // ],
       ),
       child: Stack(
         children: [
@@ -1239,7 +540,7 @@ class _HeroCard extends StatelessWidget {
               height: 160,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.05),
+                color: AppColors.primaryColorBlack,
               ),
             ),
           ),
@@ -1251,7 +552,7 @@ class _HeroCard extends StatelessWidget {
               height: 110,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.04),
+                color: AppColors.primaryColorBlack,
               ),
             ),
           ),
@@ -1261,38 +562,62 @@ class _HeroCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Label
-                Text(
-                  'Available Balance',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.65),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.8,
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Available Balance',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.65),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.8,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: onToggleBalance,
+                      visualDensity: VisualDensity.compact,
+                      tooltip: balanceHidden ? 'Show balance' : 'Hide balance',
+                      icon: Icon(
+                        balanceHidden
+                            ? Icons.visibility_off_rounded
+                            : Icons.visibility_rounded,
+                        color: Colors.white.withValues(alpha: 0.72),
+                        size: 20,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 2),
                 // Balance
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text(
-                      kCurrencyPrefix,
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.7),
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        height: 1.6,
+                    if (!balanceHidden) ...[
+                      Text(
+                        currencySymbol(currency),
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.7),
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          height: 1.6,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      balance,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 38,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: -1,
-                        height: 1,
+                      const SizedBox(width: 4),
+                    ],
+                    Flexible(
+                      child: Text(
+                        balanceHidden ? '•••••••' : balance,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 38,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -1,
+                          height: 1,
+                        ),
                       ),
                     ),
                   ],
@@ -1305,8 +630,9 @@ class _HeroCard extends StatelessWidget {
                   children: [
                     _Chip(label: '$cardCount card${cardCount == 1 ? '' : 's'}'),
                     _Chip(
-                        label:
-                            '$mobileCount mobile${mobileCount == 1 ? '' : 's'}'),
+                      label:
+                          '$mobileCount mobile${mobileCount == 1 ? '' : 's'}',
+                    ),
                     _Chip(label: '$txCount transactions'),
                   ],
                 ),
@@ -1319,6 +645,7 @@ class _HeroCard extends StatelessWidget {
                         label: 'Deposit',
                         icon: Icons.add_rounded,
                         filled: true,
+                        loading: loading,
                         onPressed: loading ? null : onDeposit,
                       ),
                     ),
@@ -1328,6 +655,7 @@ class _HeroCard extends StatelessWidget {
                         label: 'Withdraw',
                         icon: Icons.south_rounded,
                         filled: false,
+                        loading: loading,
                         onPressed: loading ? null : onWithdraw,
                       ),
                     ),
@@ -1341,7 +669,7 @@ class _HeroCard extends StatelessWidget {
                       child: _StatPill(
                         label: 'Total Deposited',
                         value:
-                            '$kCurrencyPrefix${totalDeposited.toStringAsFixed(2)}',
+                            moneyText(totalDeposited, currency),
                         icon: Icons.north_east_rounded,
                         iconColor: const Color(0xFF4CAF50),
                       ),
@@ -1351,7 +679,7 @@ class _HeroCard extends StatelessWidget {
                       child: _StatPill(
                         label: 'Total Withdrawn',
                         value:
-                            '$kCurrencyPrefix${totalWithdrawn.toStringAsFixed(2)}',
+                            moneyText(totalWithdrawn, currency),
                         icon: Icons.south_west_rounded,
                         iconColor: const Color(0xFFFF6B6B),
                       ),
@@ -1378,8 +706,10 @@ class _Chip extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(999),
-        border:
-            Border.all(color: Colors.white.withValues(alpha: 0.18), width: 1),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.18),
+          width: 1,
+        ),
       ),
       child: Text(
         label,
@@ -1398,12 +728,14 @@ class _HeroButton extends StatelessWidget {
     required this.label,
     required this.icon,
     required this.filled,
+    required this.loading,
     required this.onPressed,
   });
 
   final String label;
   final IconData icon;
   final bool filled;
+  final bool loading;
   final VoidCallback? onPressed;
 
   @override
@@ -1411,30 +743,48 @@ class _HeroButton extends StatelessWidget {
     if (filled) {
       return FilledButton.icon(
         onPressed: onPressed,
-        icon: Icon(icon, size: 16),
+        icon: loading
+            ? const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : Icon(icon, size: 16),
         label: Text(label),
         style: FilledButton.styleFrom(
           backgroundColor: AppColors.gambianGold,
           foregroundColor: const Color(0xFF2A1A00),
+          disabledBackgroundColor: AppColors.gambianGold.withValues(
+            alpha: 0.72,
+          ),
+          disabledForegroundColor: const Color(
+            0xFF2A1A00,
+          ).withValues(alpha: 0.72),
           textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
           padding: const EdgeInsets.symmetric(vertical: 13),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
       );
     }
     return OutlinedButton.icon(
       onPressed: onPressed,
-      icon: Icon(icon, size: 16),
+      icon: loading
+          ? const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : Icon(icon, size: 16),
       label: Text(label),
       style: OutlinedButton.styleFrom(
         foregroundColor: Colors.white,
+        disabledForegroundColor: Colors.white.withValues(alpha: 0.68),
         side: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
-        textStyle:
-            const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+        textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
         padding: const EdgeInsets.symmetric(vertical: 13),
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
@@ -1460,8 +810,10 @@ class _StatPill extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.09),
         borderRadius: BorderRadius.circular(14),
-        border:
-            Border.all(color: Colors.white.withValues(alpha: 0.15), width: 1),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.15),
+          width: 1,
+        ),
       ),
       child: Row(
         children: [
@@ -1572,7 +924,7 @@ class _TabPill extends StatelessWidget {
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeOut,
           decoration: BoxDecoration(
-            color: active ? AppColors.gambianBlue : Colors.transparent,
+            color: active ? AppColors.primaryColorBlack : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
           ),
           alignment: Alignment.center,
@@ -1628,9 +980,11 @@ class _OverviewTab extends StatelessWidget {
               icon: const Icon(Icons.add_rounded, size: 16),
               label: const Text('Add Card'),
               style: TextButton.styleFrom(
-                foregroundColor: AppColors.gambianBlue,
+                foregroundColor: AppColors.primaryColorBlack,
                 textStyle: const TextStyle(
-                    fontWeight: FontWeight.w700, fontSize: 13),
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                ),
               ),
             ),
           ],
@@ -1639,7 +993,8 @@ class _OverviewTab extends StatelessWidget {
         if (methods.isEmpty)
           _EmptyState(
             icon: Icons.credit_card_off_outlined,
-            message: 'No payment methods yet.\nAdd a card to start transacting.',
+            message:
+                'No payment methods yet.\nAdd a card to start transacting.',
           )
         else
           ...methods.map(
@@ -1675,12 +1030,12 @@ class _MethodTile extends StatelessWidget {
             width: 42,
             height: 42,
             decoration: BoxDecoration(
-              color: AppColors.gambianBlue.withValues(alpha: 0.08),
+              color: AppColors.primaryColorBlack.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
               isStripe ? Icons.credit_card_rounded : Icons.phone_iphone_rounded,
-              color: AppColors.gambianBlue,
+              color: AppColors.primaryColorBlack,
               size: 20,
             ),
           ),
@@ -1689,29 +1044,35 @@ class _MethodTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 14,
-                        color: Color(0xFF0D1B3E))),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                    color: Color(0xFF0D1B3E),
+                  ),
+                ),
                 const SizedBox(height: 2),
-                Text(subtitle,
-                    style: const TextStyle(
-                        color: Color(0xFF8892A4), fontSize: 12)),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    color: Color(0xFF8892A4),
+                    fontSize: 12,
+                  ),
+                ),
               ],
             ),
           ),
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
             decoration: BoxDecoration(
-              color: AppColors.gambianBlue.withValues(alpha: 0.07),
+              color: AppColors.primaryColorBlack.withValues(alpha: 0.07),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
               (method['provider'] ?? '').toString(),
               style: TextStyle(
-                color: AppColors.gambianBlue,
+                color: AppColors.primaryColorBlack,
                 fontSize: 10,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0.4,
@@ -1752,41 +1113,76 @@ class _TransactionsTab extends StatelessWidget {
     required this.ledger,
     required this.loading,
     required this.theme,
+    required this.currency,
   });
 
   final List<WalletTransferSummary> transfers;
   final List<WalletLedgerEntry> ledger;
   final bool loading;
   final ThemeData theme;
+  final String? currency;
+
+  bool _isEscrowLedger(WalletLedgerEntry entry) {
+    if (entry.action.startsWith('Paid transaction') ||
+        entry.action.startsWith('Received for transaction') ||
+        entry.action.startsWith('Refunded for transaction')) {
+      return true;
+    }
+    return false;
+  }
+
+  String _ledgerLabel(String action) {
+    final parts = action.split(' — ').map((p) => p.trim()).where((p) => p.isNotEmpty).toList();
+    if (parts.length >= 2) {
+      final title = parts[1];
+      if (action.startsWith('Paid transaction')) return 'Escrow payment · $title';
+      if (action.startsWith('Received for transaction')) return 'Escrow payout · $title';
+      if (action.startsWith('Refunded for transaction')) return 'Escrow refund · $title';
+    }
+    return action;
+  }
 
   List<_WalletActivityItem> _activity() {
-    final rows = <_WalletActivityItem>[
-      ...transfers.map(
-        (t) => _WalletActivityItem(
-          id: 'transfer-${t.id}',
-          label: t.kind == 'DEPOSIT'
-              ? 'Deposit via ${t.provider}'
-              : 'Withdrawal via ${t.provider}',
-          createdAt: t.createdAt,
-          signedAmount: t.kind == 'DEPOSIT'
-              ? double.tryParse(t.amount) ?? 0
-              : -(double.tryParse(t.amount) ?? 0),
-          status: t.status,
-          isEscrow: false,
-        ),
-      ),
-      ...ledger.map(
-        (e) => _WalletActivityItem(
-          id: 'ledger-${e.id}',
-          label: e.action,
-          createdAt: e.createdAt,
-          signedAmount: double.tryParse(e.amount) ?? 0,
+    final rows = transfers
+        .map(
+          (t) => _WalletActivityItem(
+            id: 'transfer-${t.id}',
+            label: _transferLabel(t),
+            createdAt: t.createdAt,
+            signedAmount: t.kind == 'DEPOSIT'
+                ? double.tryParse(t.amount) ?? 0
+                : -(double.tryParse(t.amount) ?? 0),
+            status: t.status,
+            isEscrow: false,
+          ),
+        )
+        .toList();
+
+    for (final entry in ledger) {
+      if (!_isEscrowLedger(entry)) continue;
+      rows.add(
+        _WalletActivityItem(
+          id: 'ledger-${entry.id}',
+          label: _ledgerLabel(entry.action),
+          createdAt: entry.createdAt,
+          signedAmount: double.tryParse(entry.amount) ?? 0,
           isEscrow: true,
         ),
-      ),
-    ];
+      );
+    }
+
     rows.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     return rows;
+  }
+
+  String _transferLabel(WalletTransferSummary transfer) {
+    if (transfer.kind == 'DEPOSIT') {
+      return transfer.provider == 'STRIPE'
+          ? 'Deposited through card'
+          : 'Deposited through mobile wallet';
+    }
+    if (transfer.kind == 'PAYOUT') return 'Withdrawn through Modem Pay';
+    return transfer.kind;
   }
 
   @override
@@ -1804,7 +1200,9 @@ class _TransactionsTab extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 10),
-        if (activity.isEmpty)
+        if (loading && activity.isEmpty)
+          const _WalletTransactionsLoading()
+        else if (activity.isEmpty)
           _EmptyState(
             icon: Icons.receipt_long_outlined,
             message: 'No transactions yet.',
@@ -1813,7 +1211,7 @@ class _TransactionsTab extends StatelessWidget {
           ...activity.map(
             (item) => Padding(
               padding: const EdgeInsets.only(bottom: 10),
-              child: _ActivityTile(item: item),
+              child: _ActivityTile(item: item, currency: currency),
             ),
           ),
       ],
@@ -1821,16 +1219,49 @@ class _TransactionsTab extends StatelessWidget {
   }
 }
 
+class _WalletTransactionsLoading extends StatelessWidget {
+  const _WalletTransactionsLoading();
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassCard(
+      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
+      child: Center(
+        child: Column(
+          children: [
+            SizedBox(
+              height: 32,
+              width: 32,
+              child: CircularProgressIndicator(
+                strokeWidth: 3,
+                color: AppColors.primaryColorBlack,
+              ),
+            ),
+            const SizedBox(height: 14),
+            const Text(
+              'Loading transactions...',
+              style: TextStyle(
+                color: Color(0xFF8892A4),
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _ActivityTile extends StatelessWidget {
-  const _ActivityTile({required this.item});
+  const _ActivityTile({required this.item, required this.currency});
   final _WalletActivityItem item;
+  final String? currency;
 
   @override
   Widget build(BuildContext context) {
     final positive = item.signedAmount >= 0;
-    final color = positive
-        ? const Color(0xFF22C55E)
-        : const Color(0xFFEF4444);
+    final color = positive ? const Color(0xFF22C55E) : const Color(0xFFEF4444);
     final bgColor = color;
     final date = item.createdAt.toLocal();
     final dateStr =
@@ -1893,7 +1324,7 @@ class _ActivityTile extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Text(
-            '${positive ? '+' : '-'}$kCurrencyPrefix${item.signedAmount.abs().toStringAsFixed(2)}',
+            '${positive ? '+' : '-'}${moneyText(item.signedAmount.abs(), currency)}',
             style: TextStyle(
               color: color,
               fontWeight: FontWeight.w800,
@@ -1913,9 +1344,7 @@ class _TransferTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDeposit = transfer.kind == 'DEPOSIT';
-    final color = isDeposit
-        ? const Color(0xFF22C55E)
-        : const Color(0xFFEF4444);
+    final color = isDeposit ? const Color(0xFF22C55E) : const Color(0xFFEF4444);
     final bgColor = isDeposit
         ? const Color(0xFF22C55E)
         : const Color(0xFFEF4444);
@@ -1936,9 +1365,7 @@ class _TransferTile extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
-              isDeposit
-                  ? Icons.north_east_rounded
-                  : Icons.south_west_rounded,
+              isDeposit ? Icons.north_east_rounded : Icons.south_west_rounded,
               color: color,
               size: 18,
             ),
@@ -1951,16 +1378,21 @@ class _TransferTile extends StatelessWidget {
                 Text(
                   '${isDeposit ? 'Deposit' : 'Withdrawal'} via ${transfer.provider}',
                   style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13,
-                      color: Color(0xFF0D1B3E)),
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                    color: Color(0xFF0D1B3E),
+                  ),
                 ),
                 const SizedBox(height: 3),
                 Row(
                   children: [
-                    Text(dateStr,
-                        style: const TextStyle(
-                            color: Color(0xFF8892A4), fontSize: 11)),
+                    Text(
+                      dateStr,
+                      style: const TextStyle(
+                        color: Color(0xFF8892A4),
+                        fontSize: 11,
+                      ),
+                    ),
                     const SizedBox(width: 8),
                     _StatusBadge(status: transfer.status),
                   ],
@@ -1970,7 +1402,7 @@ class _TransferTile extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Text(
-            '${isDeposit ? '+' : '-'}$kCurrencyPrefix${transfer.amount}',
+            '${isDeposit ? '+' : '-'}${moneyText(transfer.amount, transfer.currency)}',
             style: TextStyle(
               color: color,
               fontWeight: FontWeight.w800,
@@ -2055,8 +1487,7 @@ class _EmptyState extends StatelessWidget {
 }
 
 class _RefreshIconButton extends StatelessWidget {
-  const _RefreshIconButton(
-      {required this.loading, required this.onPressed});
+  const _RefreshIconButton({required this.loading, required this.onPressed});
   final bool loading;
   final VoidCallback onPressed;
 
@@ -2070,7 +1501,7 @@ class _RefreshIconButton extends StatelessWidget {
               height: 18,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                color: AppColors.gambianBlue,
+                color: AppColors.primaryColorBlack,
               ),
             )
           : const Icon(Icons.refresh_rounded, color: Color(0xFF0D1B3E)),
@@ -2101,10 +1532,14 @@ class _ConfirmDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      title: Text(title,
-          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
-      content: Text(body,
-          style: const TextStyle(color: Color(0xFF5A6478), height: 1.5)),
+      title: Text(
+        title,
+        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17),
+      ),
+      content: Text(
+        body,
+        style: const TextStyle(color: Color(0xFF5A6478), height: 1.5),
+      ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context, false),
@@ -2113,9 +1548,10 @@ class _ConfirmDialog extends StatelessWidget {
         FilledButton(
           onPressed: () => Navigator.pop(context, true),
           style: FilledButton.styleFrom(
-            backgroundColor: AppColors.gambianBlue,
+            backgroundColor: AppColors.primaryColorBlack,
             shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10)),
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
           child: Text(confirmLabel),
         ),
@@ -2134,7 +1570,7 @@ class _AmountDialog extends StatefulWidget {
 
   final String title;
   final String hint;
-  final String currency;
+  final String? currency;
 
   @override
   State<_AmountDialog> createState() => _AmountDialogState();
@@ -2159,16 +1595,17 @@ class _AmountDialogState extends State<_AmountDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      title: Text(widget.title,
-          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
+      title: Text(
+        widget.title,
+        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17),
+      ),
       content: TextField(
         controller: _ctrl,
         autofocus: true,
-        keyboardType:
-            const TextInputType.numberWithOptions(decimal: true),
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
         onSubmitted: (_) => _submit(),
         decoration: InputDecoration(
-          prefixText: '${widget.currency} ',
+          prefixText: currencySymbol(widget.currency).isEmpty ? null : '${currencySymbol(widget.currency)} ',
           hintText: widget.hint,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
@@ -2176,8 +1613,7 @@ class _AmountDialogState extends State<_AmountDialog> {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide:
-                BorderSide(color: AppColors.gambianBlue, width: 2),
+            borderSide: BorderSide(color: AppColors.primaryColorBlack, width: 2),
           ),
         ),
       ),
@@ -2189,9 +1625,10 @@ class _AmountDialogState extends State<_AmountDialog> {
         FilledButton(
           onPressed: _submit,
           style: FilledButton.styleFrom(
-            backgroundColor: AppColors.gambianBlue,
+            backgroundColor: AppColors.primaryColorBlack,
             shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10)),
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
           child: const Text('Continue'),
         ),
@@ -2227,9 +1664,10 @@ class _DepositSourceSheet extends StatelessWidget {
           const Text(
             'Add Funds',
             style: TextStyle(
-                fontWeight: FontWeight.w800,
-                fontSize: 18,
-                color: Color(0xFF0D1B3E)),
+              fontWeight: FontWeight.w800,
+              fontSize: 18,
+              color: Color(0xFF0D1B3E),
+            ),
           ),
           const SizedBox(height: 6),
           const Text(
@@ -2253,8 +1691,10 @@ class _DepositSourceSheet extends StatelessWidget {
           const SizedBox(height: 10),
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel',
-                style: TextStyle(color: Color(0xFF8892A4))),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: Color(0xFF8892A4)),
+            ),
           ),
         ],
       ),
@@ -2281,8 +1721,7 @@ class _SheetOption extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
           border: Border.all(color: const Color(0xFFE8EBF2)),
           borderRadius: BorderRadius.circular(16),
@@ -2293,30 +1732,36 @@ class _SheetOption extends StatelessWidget {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: AppColors.gambianBlue.withValues(alpha: 0.08),
+                color: AppColors.primaryColorBlack.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(icon, color: AppColors.gambianBlue, size: 22),
+              child: Icon(icon, color: AppColors.primaryColorBlack, size: 22),
             ),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(label,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 14,
-                          color: Color(0xFF0D1B3E))),
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                      color: Color(0xFF0D1B3E),
+                    ),
+                  ),
                   const SizedBox(height: 2),
-                  Text(subtitle,
-                      style: const TextStyle(
-                          color: Color(0xFF8892A4), fontSize: 12)),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      color: Color(0xFF8892A4),
+                      fontSize: 12,
+                    ),
+                  ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right_rounded,
-                color: Color(0xFFCDD2DE)),
+            const Icon(Icons.chevron_right_rounded, color: Color(0xFFCDD2DE)),
           ],
         ),
       ),
@@ -2326,10 +1771,7 @@ class _SheetOption extends StatelessWidget {
 
 /// Method selection dialog (reused for card deposit)
 class _MethodSelectionDialog extends StatelessWidget {
-  const _MethodSelectionDialog({
-    required this.title,
-    required this.methods,
-  });
+  const _MethodSelectionDialog({required this.title, required this.methods});
 
   final String title;
   final List<Map<String, dynamic>> methods;
@@ -2338,8 +1780,10 @@ class _MethodSelectionDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      title: Text(title,
-          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
+      title: Text(
+        title,
+        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17),
+      ),
       content: SizedBox(
         width: 400,
         child: methods.isEmpty
@@ -2347,8 +1791,7 @@ class _MethodSelectionDialog extends StatelessWidget {
             : ListView.separated(
                 shrinkWrap: true,
                 itemCount: methods.length,
-                separatorBuilder: (_, __) =>
-                    const Divider(height: 1),
+                separatorBuilder: (_, __) => const Divider(height: 1),
                 itemBuilder: (context, i) {
                   final m = methods[i];
                   final isStripe = m['provider'] == 'STRIPE';
@@ -2360,19 +1803,21 @@ class _MethodSelectionDialog extends StatelessWidget {
                       : (m['msisdn'] ?? '').toString();
                   return ListTile(
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     leading: Icon(
                       isStripe
                           ? Icons.credit_card_rounded
                           : Icons.phone_iphone_rounded,
-                      color: AppColors.gambianBlue,
+                      color: AppColors.primaryColorBlack,
                     ),
-                    title: Text(label,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.w700)),
+                    title: Text(
+                      label,
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
                     subtitle: Text(sub),
-                    onTap: () => Navigator.pop(
-                        context, (m['id'] ?? '').toString()),
+                    onTap: () =>
+                        Navigator.pop(context, (m['id'] ?? '').toString()),
                   );
                 },
               ),
