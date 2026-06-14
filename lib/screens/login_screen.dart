@@ -336,7 +336,41 @@ class _LoginScreenState extends State<LoginScreen> {
         .where((country) => _operatingCountries.any((op) => op.iso2 == country.code))
         .toList(growable: false);
 
-    if (_loadingCountries || allowedPhoneCountries.isEmpty) {
+    if (_loadingCountries) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.shade300),
+              color: Colors.white,
+            ),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppColors.primaryColorBlack,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Loading operating countries...',
+                  style: TextStyle(color: Colors.grey.shade700, fontSize: 14),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+
+    if (allowedPhoneCountries.isEmpty) {
       return Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -349,36 +383,22 @@ class _LoginScreenState extends State<LoginScreen> {
               color: Colors.white,
             ),
             child: Text(
-              _loadingCountries
-                  ? 'Loading operating countries...'
-                  : (_countryLoadError ?? 'No operating countries are configured.'),
-              style: TextStyle(
-                color: _loadingCountries ? Colors.grey.shade700 : Colors.red.shade700,
-                fontSize: 14,
-              ),
+              _countryLoadError ?? 'No operating countries are configured.',
+              style: TextStyle(color: Colors.red.shade700, fontSize: 14),
             ),
           ),
-          if (_countryLoadError != null && !_loadingCountries) ...[
+          if (_countryLoadError != null) ...[
             const SizedBox(height: 12),
             OutlinedButton(
               onPressed: _loadOperatingCountries,
               child: const Text('Try again'),
             ),
           ],
-          const SizedBox(height: 16),
-          FilledButton(
-            onPressed: null,
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.primaryColorBlack,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            child: Text(_loadingCountries ? 'Loading countries...' : 'Send SMS code'),
-          ),
         ],
       );
     }
 
+    // Phone input when countries are available
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
