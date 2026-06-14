@@ -120,7 +120,6 @@ Future<CompleteProfileResponse> completeProfile(
   String token, {
   required String displayName,
   required String fullName,
-  required String email,
 }) async {
   final raw = await apiFetch(
     '/users/profile/complete',
@@ -129,12 +128,10 @@ Future<CompleteProfileResponse> completeProfile(
     body: {
       'displayName': displayName,
       'fullName': fullName,
-      'email': email,
     },
   ) as Map<String, dynamic>;
   return CompleteProfileResponse(
     ok: raw['ok'] as bool? ?? false,
-    needsEmailVerification: raw['needsEmailVerification'] as bool? ?? false,
     profileComplete: raw['profileComplete'] as bool?,
     profileCompletedAt: raw['profileCompletedAt'] as String?,
   );
@@ -143,13 +140,11 @@ Future<CompleteProfileResponse> completeProfile(
 class CompleteProfileResponse {
   CompleteProfileResponse({
     required this.ok,
-    required this.needsEmailVerification,
     this.profileComplete,
     this.profileCompletedAt,
   });
 
   final bool ok;
-  final bool needsEmailVerification;
   final bool? profileComplete;
   final String? profileCompletedAt;
 }

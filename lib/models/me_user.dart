@@ -143,13 +143,11 @@ class MeUser {
       id: userId,
       createdAt: now,
       profileCompletedAt: profileCompleted ? placeholder : null,
-      emailVerifiedAt: profileCompleted ? placeholder : null,
       professionalApps: const [],
     );
   }
 
-  bool get profileReady =>
-      profileCompletedAt != null && emailVerifiedAt != null;
+  bool get profileReady => profileCompletedAt != null;
 
   bool get personalKycApproved =>
       personalKycStatus == 'APPROVED' ||

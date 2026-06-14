@@ -152,7 +152,6 @@ class AuthController extends ChangeNotifier {
   Future<CompleteProfileResponse> submitProfileDetails({
     required String displayName,
     required String fullName,
-    required String email,
   }) async {
     final t = _token;
     if (t == null || t.isEmpty) throw StateError('Not signed in');
@@ -160,7 +159,6 @@ class AuthController extends ChangeNotifier {
       t,
       displayName: displayName,
       fullName: fullName,
-      email: email,
     );
     await refreshUser();
     return res;
