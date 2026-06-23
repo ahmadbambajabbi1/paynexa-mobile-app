@@ -94,6 +94,8 @@ class _MarketplaceBookingPaymentSheetState extends State<_MarketplaceBookingPaym
       context: context,
       suggestedAmount: _deficit > 0 ? _deficit : widget.amount,
       clientRequestIdPrefix: 'booking-deposit-${widget.bookingId}',
+      depositReturnContext: 'booking',
+      depositReturnId: widget.bookingId,
     );
     if (!funded || !mounted) return;
     await _refresh();

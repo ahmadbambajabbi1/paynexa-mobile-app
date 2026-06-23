@@ -13,10 +13,12 @@ class MarketplaceBookingDetailScreen extends StatefulWidget {
     super.key,
     required this.bookingId,
     required this.initialMode,
+    this.resumePaymentAfterDeposit = false,
   });
 
   final String bookingId;
   final String initialMode; // me | provider
+  final bool resumePaymentAfterDeposit;
 
   @override
   State<MarketplaceBookingDetailScreen> createState() =>
@@ -32,6 +34,7 @@ class _MarketplaceBookingDetailScreenState
   String _tab = 'overview';
   String? _busyAction;
   final TextEditingController _commentCtrl = TextEditingController();
+  bool _depositResumeAttempted = false;
 
   static const _slate100 = Color(0xFFF1F5F9);
   static const _slate500 = Color(0xFF64748B);
@@ -219,7 +222,23 @@ class _MarketplaceBookingDetailScreenState
       setState(() => _err = '$e');
     } finally {
       if (mounted) setState(() => _loading = false);
+      if (widget.resumePaymentAfterDeposit &&
+          !_depositResumeAttempted &&
+          _booking != null) {
+        _depositResumeAttempted = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) => _maybeResumePayment());
+      }
     }
+  }
+
+  Future<void> _maybeResumePayment() async {
+    if (!mounted) return;
+    final b = _booking;
+    if (b == null) return;
+    final flags = _flags(b);
+    if (flags.contains('client_paid') || '${b['status']}' == 'FUNDED') return;
+    if (!flags.contains('provider_finished')) return;
+    await _runAction('MARK_FUNDED');
   }
 
   Future<void> _runAction(String action) async {

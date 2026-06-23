@@ -134,6 +134,8 @@ Future<Map<String, dynamic>> createModernPayDepositIntent(
   String token, {
   required double amount,
   String? clientRequestId,
+  String? returnUrl,
+  String? cancelUrl,
 }) async {
   final raw = await apiFetch(
     '/escrow/wallet/deposits/modernpay',
@@ -141,7 +143,9 @@ Future<Map<String, dynamic>> createModernPayDepositIntent(
     token: token,
     body: {
       'amount': amount,
-      'clientRequestId': clientRequestId,
+      if (clientRequestId != null) 'clientRequestId': clientRequestId,
+      if (returnUrl != null) 'returnUrl': returnUrl,
+      if (cancelUrl != null) 'cancelUrl': cancelUrl,
     },
   ) as Map<String, dynamic>;
   return raw;

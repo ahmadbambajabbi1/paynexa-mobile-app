@@ -6,12 +6,14 @@ import 'package:app_links/app_links.dart';
 import 'auth/auth_controller.dart';
 import 'config/constants.dart';
 import 'push/push_notifications_service.dart';
+import 'screens/marketplace_booking_detail_screen.dart';
 import 'screens/marketplace_shell_screen.dart';
 import 'screens/complete_profile_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/public_checkout_screen.dart';
 import 'screens/transaction_detail_screen.dart';
 import 'theme/app_theme.dart';
+import 'utils/pending_payment_resume.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -181,6 +183,8 @@ void _handleDeepLink(Uri uri, BuildContext context) {
 
 void _handleDepositReturn(Uri uri, BuildContext context) {
   final outcome = uri.pathSegments.isNotEmpty ? uri.pathSegments.first : '';
+  if (outcome != 'success' && outcome != 'cancel') return;
+
   final depositContext = uri.queryParameters['context'] ?? 'billings';
   final id = uri.queryParameters['id'];
   final messenger = ScaffoldMessenger.maybeOf(navigatorKey.currentContext ?? context);
@@ -189,53 +193,74 @@ void _handleDepositReturn(Uri uri, BuildContext context) {
     messenger?.showSnackBar(
       const SnackBar(content: Text('Payment was cancelled.')),
     );
-    return;
+  } else {
+    messenger?.showSnackBar(
+      const SnackBar(content: Text('Payment received. Your wallet will update shortly.')),
+    );
+    PendingPaymentResume.clear();
   }
-  if (outcome != 'success') return;
 
-  messenger?.showSnackBar(
-    const SnackBar(content: Text('Payment received. Your wallet will update shortly.')),
+  _navigateAfterDeposit(
+    depositContext: depositContext,
+    id: id,
+    resumePayment: outcome == 'success',
   );
+}
 
+void _navigateAfterDeposit({
+  required String depositContext,
+  String? id,
+  required bool resumePayment,
+}) {
   switch (depositContext) {
     case 'transaction':
       if (id != null && id.isNotEmpty) {
-        navigatorKey.currentState?.pushReplacement(
+        navigatorKey.currentState?.pushAndRemoveUntil(
           MaterialPageRoute<void>(
             builder: (_) => TransactionDetailScreen(
               transactionId: id,
-              resumePaymentAfterDeposit: true,
+              resumePaymentAfterDeposit: resumePayment,
             ),
           ),
+          (route) => false,
         );
       }
       break;
     case 'pay':
       if (id != null && id.isNotEmpty) {
-        navigatorKey.currentState?.pushReplacement(
+        navigatorKey.currentState?.pushAndRemoveUntil(
           MaterialPageRoute<void>(
             builder: (_) => PublicCheckoutScreen(
               ref: id,
-              resumePaymentAfterDeposit: true,
+              resumePaymentAfterDeposit: resumePayment,
             ),
           ),
+          (route) => false,
         );
       }
       break;
     case 'booking':
       if (id != null && id.isNotEmpty) {
-        navigatorKey.currentState?.pushReplacement(
+        navigatorKey.currentState?.pushAndRemoveUntil(
           MaterialPageRoute<void>(
             builder: (_) => MarketplaceBookingDetailScreen(
               bookingId: id,
               initialMode: 'me',
+              resumePaymentAfterDeposit: resumePayment,
             ),
           ),
+          (route) => false,
         );
       }
       break;
     case 'billings':
     default:
+      navigatorKey.currentState?.pushAndRemoveUntil(
+        MaterialPageRoute<void>(
+          builder: (_) => const MarketplaceShellScreen(initialIndex: 1),
+        ),
+        (route) => false,
+      );
       break;
   }
 }

@@ -11,14 +11,22 @@ import 'profile_screen.dart';
 import 'transactions_screen.dart';
 
 class MarketplaceShellScreen extends StatefulWidget {
-  const MarketplaceShellScreen({super.key});
+  const MarketplaceShellScreen({super.key, this.initialIndex = 0});
+
+  final int initialIndex;
 
   @override
   State<MarketplaceShellScreen> createState() => _MarketplaceShellScreenState();
 }
 
 class _MarketplaceShellScreenState extends State<MarketplaceShellScreen> {
-  int _index = 0;
+  late int _index;
+
+  @override
+  void initState() {
+    super.initState();
+    _index = widget.initialIndex;
+  }
 
   @override
   Widget build(BuildContext context) {

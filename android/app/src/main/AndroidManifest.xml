@@ -34,6 +34,10 @@
                     android:scheme="https"
                     android:host="paynexa-web-workspace.vercel.app"
                     android:pathPrefix="/pay" />
+                <data
+                    android:scheme="https"
+                    android:host="paynexa-web-workspace.vercel.app"
+                    android:pathPrefix="/wallet/deposit" />
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
@@ -60,6 +64,9 @@
                 <data
                     android:scheme="safetrade"
                     android:host="stripe-redirect" />
+                <data
+                    android:scheme="safetrade"
+                    android:host="deposit" />
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.

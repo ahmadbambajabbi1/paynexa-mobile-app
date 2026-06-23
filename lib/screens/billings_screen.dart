@@ -11,6 +11,8 @@ import '../models/wallet_models.dart';
 import '../theme/app_colors.dart';
 import '../utils/snackbar.dart';
 import '../utils/currency.dart';
+import '../utils/modempay_return_urls.dart';
+import '../utils/pending_payment_resume.dart';
 import '../widgets/glass_card.dart';
 
 class BillingsScreen extends StatelessWidget {
@@ -252,15 +254,21 @@ class _WalletBodyState extends State<_WalletBody>
     final token = context.read<AuthController>().token;
     if (token == null || token.isEmpty) return;
     try {
+      PendingPaymentResume.save(
+        context: 'billings',
+        transactionId: '',
+      );
+      final urls = buildModernPayReturnUrls(context: 'billings');
       final res = await createModernPayDepositIntent(
         token,
         amount: amount,
         clientRequestId: DateTime.now().millisecondsSinceEpoch.toString(),
+        returnUrl: urls.returnUrl,
+        cancelUrl: urls.cancelUrl,
       );
       if (!mounted) return;
       final checkoutUrl = (res['checkoutUrl'] ?? '').toString();
-      final transferId = (res['transferId'] ?? '').toString();
-      if (checkoutUrl.isEmpty || transferId.isEmpty) {
+      if (checkoutUrl.isEmpty) {
         showSnack(context, 'Unable to start mobile wallet checkout');
         return;
       }
@@ -269,35 +277,9 @@ class _WalletBodyState extends State<_WalletBody>
         mode: LaunchMode.externalApplication,
       );
       if (!mounted) return;
-      final confirmed = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => _ConfirmDialog(
-          title: 'Confirm Mobile Payment',
-          body:
-              'After completing the payment in Modem Pay, tap Confirm to credit your wallet.',
-          confirmLabel: 'Confirm',
-          cancelLabel: 'Later',
-        ),
-      );
-      if (confirmed != true || !mounted) return;
-      final result = await confirmModernPayDeposit(
-        token,
-        transferId: transferId,
-      );
-      if (!mounted) return;
-      final status = (result['status'] ?? '').toString();
-      if (status == 'SUCCEEDED') {
-        showSnack(context, 'Wallet credited successfully.');
-        await _refresh();
-        return;
-      }
-      if (status == 'FAILED' || status == 'CANCELED') {
-        showSnack(context, 'Mobile wallet payment was not successful.');
-        return;
-      }
       showSnack(
         context,
-        'Payment is still processing. Please confirm again shortly.',
+        'Complete payment in Modem Pay. You will return to the app automatically.',
       );
     } catch (e) {
       if (mounted) showSnack(context, _publicError(e));

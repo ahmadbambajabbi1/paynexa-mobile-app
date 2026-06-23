@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../api/escrow_api.dart' as escrow;
 import '../auth/auth_controller.dart';
 import '../theme/app_colors.dart';
+import '../utils/currency.dart';
 import '../utils/modempay_return_urls.dart';
 import '../utils/pending_payment_resume.dart';
 import 'glass_card.dart';
@@ -65,7 +66,6 @@ class _WalletDepositSheetState extends State<_WalletDepositSheet> {
   final _amountCtrl = TextEditingController();
   List<Map<String, dynamic>> _cardMethods = const [];
   String? _selectedCardMethodId;
-  String? _pendingMobileTransferId;
 
   @override
   void initState() {
@@ -155,49 +155,31 @@ class _WalletDepositSheetState extends State<_WalletDepositSheet> {
       amount: amount,
     );
 
+    final urls = buildModernPayReturnUrls(
+      context: widget.depositReturnContext,
+      id: widget.depositReturnId,
+    );
     final prefix = widget.clientRequestIdPrefix ?? 'deposit';
     final res = await escrow.createModernPayDepositIntent(
       token,
       amount: amount,
       clientRequestId: '$prefix-${DateTime.now().millisecondsSinceEpoch}',
+      returnUrl: urls.returnUrl,
+      cancelUrl: urls.cancelUrl,
     );
     final checkoutUrl = (res['checkoutUrl'] ?? '').toString();
-    final transferId = (res['transferId'] ?? '').toString();
-    if (checkoutUrl.isEmpty || transferId.isEmpty) {
+    if (checkoutUrl.isEmpty) {
       throw Exception('Unable to start mobile wallet checkout.');
     }
 
-    setState(() => _pendingMobileTransferId = transferId);
     await launchUrl(Uri.parse(checkoutUrl), mode: LaunchMode.externalApplication);
     if (!mounted) return;
 
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Confirm mobile payment', style: TextStyle(fontWeight: FontWeight.w800)),
-        content: const Text(
-          'After completing payment in Modem Pay, tap Confirm to credit your wallet.',
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Later')),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(backgroundColor: AppColors.primaryColorBlack),
-            child: const Text('Confirm'),
-          ),
-        ],
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Complete payment in Modem Pay. You will return to the app automatically.'),
       ),
     );
-    if (confirmed != true || !mounted) return;
-
-    final result = await escrow.confirmModernPayDeposit(token, transferId: transferId);
-    final status = (result['status'] ?? '').toString();
-    if (status == 'SUCCEEDED') return;
-    if (status == 'FAILED' || status == 'CANCELED') {
-      throw Exception('Mobile wallet payment was not successful.');
-    }
-    throw Exception('Payment is still processing. Please confirm again shortly.');
   }
 
   Future<void> _submit() async {
@@ -220,11 +202,14 @@ class _WalletDepositSheetState extends State<_WalletDepositSheet> {
     try {
       if (_sourceIndex == 0) {
         await _depositWithCard(amount);
-      } else {
-        await _startMobileDeposit(amount);
+        if (!mounted) return;
+        Navigator.of(context).pop(true);
+        return;
       }
+
+      await _startMobileDeposit(amount);
       if (!mounted) return;
-      Navigator.of(context).pop(true);
+      Navigator.of(context).pop(false);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_publicError(e))));
@@ -307,9 +292,7 @@ class _WalletDepositSheetState extends State<_WalletDepositSheet> {
                       border: Border.all(color: Colors.grey.shade200),
                     ),
                     child: Text(
-                      _pendingMobileTransferId == null
-                          ? 'Opens Modem Pay in your browser. Return here to confirm.'
-                          : 'Complete payment in Modem Pay, then tap Deposit.',
+                      'Opens Modem Pay in your browser. You will return to the app after payment.',
                       style: TextStyle(color: Colors.grey.shade700, fontSize: 12),
                     ),
                   ),
