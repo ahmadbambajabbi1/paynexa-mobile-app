@@ -6,12 +6,8 @@ import 'package:url_launcher/url_launcher.dart';
 import '../api/escrow_api.dart' as escrow;
 import '../auth/auth_controller.dart';
 import '../theme/app_colors.dart';
-<<<<<<< HEAD
-import '../utils/currency.dart';
-=======
 import '../utils/modempay_return_urls.dart';
 import '../utils/pending_payment_resume.dart';
->>>>>>> 0a6a40e (worked)
 import 'glass_card.dart';
 
 /// Inline fund-wallet UI for checkout flows. Returns true when wallet was credited.
@@ -20,12 +16,9 @@ Future<bool> showWalletDepositSheet({
   required double suggestedAmount,
   String? currency,
   String? clientRequestIdPrefix,
-<<<<<<< HEAD
-=======
   String depositReturnContext = 'billings',
   String? depositReturnId,
   String? paymentTransactionId,
->>>>>>> 0a6a40e (worked)
 }) async {
   final result = await showModalBottomSheet<bool>(
     context: context,
@@ -36,12 +29,9 @@ Future<bool> showWalletDepositSheet({
       suggestedAmount: suggestedAmount,
       currency: currency,
       clientRequestIdPrefix: clientRequestIdPrefix,
-<<<<<<< HEAD
-=======
       depositReturnContext: depositReturnContext,
       depositReturnId: depositReturnId,
       paymentTransactionId: paymentTransactionId,
->>>>>>> 0a6a40e (worked)
     ),
   );
   return result == true;
@@ -52,23 +42,17 @@ class _WalletDepositSheet extends StatefulWidget {
     required this.suggestedAmount,
     required this.currency,
     required this.clientRequestIdPrefix,
-<<<<<<< HEAD
-=======
     required this.depositReturnContext,
     required this.depositReturnId,
     required this.paymentTransactionId,
->>>>>>> 0a6a40e (worked)
   });
 
   final double suggestedAmount;
   final String? currency;
   final String? clientRequestIdPrefix;
-<<<<<<< HEAD
-=======
   final String depositReturnContext;
   final String? depositReturnId;
   final String? paymentTransactionId;
->>>>>>> 0a6a40e (worked)
 
   @override
   State<_WalletDepositSheet> createState() => _WalletDepositSheetState();

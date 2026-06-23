@@ -7,7 +7,7 @@ const String kApiBaseUrl = String.fromEnvironment(
 
 const String kWebBaseUrl = String.fromEnvironment(
   'WEB_BASE_URL',
-  defaultValue: "https://paynexa-web-work
+  defaultValue: "https://paynexa-web-workspace.vercel.app"
   space.vercel.app",
 );
 
