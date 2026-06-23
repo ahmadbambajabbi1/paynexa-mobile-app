@@ -20,6 +20,13 @@ class DeviceIdService {
       _memory = existing;
       return existing;
     }
+    final legacy = await _storage.read(key: kLegacyStorageDeviceId);
+    if (legacy != null && legacy.isNotEmpty) {
+      await _storage.write(key: kStorageDeviceId, value: legacy);
+      await _storage.delete(key: kLegacyStorageDeviceId);
+      _memory = legacy;
+      return legacy;
+    }
     final id = _uuid.v4();
     await _storage.write(key: kStorageDeviceId, value: id);
     _memory = id;

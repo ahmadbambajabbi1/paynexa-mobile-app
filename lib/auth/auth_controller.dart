@@ -33,6 +33,13 @@ class AuthController extends ChangeNotifier {
     notifyListeners();
     try {
       _token = await _secure.read(key: kStorageAccessToken);
+      if ((_token == null || _token!.isEmpty)) {
+        _token = await _secure.read(key: kLegacyStorageAccessToken);
+        if (_token != null && _token!.isNotEmpty) {
+          await _secure.write(key: kStorageAccessToken, value: _token!);
+          await _secure.delete(key: kLegacyStorageAccessToken);
+        }
+      }
       if (_token != null && _token!.isNotEmpty) {
         final me = await fetchMe(_token!);
         _user = me.user;

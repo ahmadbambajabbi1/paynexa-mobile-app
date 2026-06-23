@@ -292,3 +292,52 @@ Future<PublicClaimResult> claimPublicTransaction(
           as Map<String, dynamic>;
   return PublicClaimResult.fromJson(raw);
 }
+
+Future<void> raiseTransactionDispute(
+  String token,
+  String transactionId, {
+  required String actorId,
+  required String reason,
+  String? parentDisputeId,
+}) async {
+  await apiFetch(
+    '/transactions/${Uri.encodeComponent(transactionId)}/dispute',
+    method: 'POST',
+    token: token,
+    body: {
+      'actorId': actorId,
+      'reason': reason,
+      if (parentDisputeId != null) 'parentDisputeId': parentDisputeId,
+    },
+  );
+}
+
+Future<void> respondToTransactionDispute(
+  String token,
+  String transactionId,
+  String disputeId, {
+  required String actorId,
+  required String message,
+}) async {
+  await apiFetch(
+    '/transactions/${Uri.encodeComponent(transactionId)}/dispute/${Uri.encodeComponent(disputeId)}/respond',
+    method: 'POST',
+    token: token,
+    body: {'actorId': actorId, 'message': message},
+  );
+}
+
+Future<Map<String, dynamic>> saveDeliveryDetails(
+  String token,
+  String transactionId, {
+  required String actorId,
+  required Map<String, dynamic> details,
+}) async {
+  final raw = await apiFetch(
+    '/transactions/${Uri.encodeComponent(transactionId)}/delivery',
+    method: 'POST',
+    token: token,
+    body: {'actorId': actorId, ...details},
+  ) as Map<String, dynamic>;
+  return raw;
+}

@@ -12,7 +12,7 @@ String buildParticipantInviteMessageTemplate({
   return [
     'Hello,',
     '',
-    '$inviterLabel ($partySide) would like to invite you to act as the $roleWord for their side of an escrow transaction on SafeTrade.',
+    '$inviterLabel ($partySide) would like to invite you to act as the $roleWord for their side of an escrow transaction on PayNexa.',
     '',
     'Product: $productTitle',
     'Amount: $amount',

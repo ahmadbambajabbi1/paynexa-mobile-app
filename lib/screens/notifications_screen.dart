@@ -7,6 +7,9 @@ import '../api/transactions_api.dart';
 import '../auth/auth_controller.dart';
 import '../models/transaction_models.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_theme.dart';
+import '../widgets/pattern_background.dart';
+import '../widgets/transaction_notification_card.dart';
 import 'transaction_detail_screen.dart';
 
 class NotificationsScreen extends StatefulWidget {
@@ -41,9 +44,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final u = auth.user;
     if (t == null || u == null) return;
     _sseSub?.cancel();
-    _sseSub = transactionNotificationEvents(t, u.id).listen((_) {
-      _load();
-    });
+    _sseSub = transactionNotificationEvents(t, u.id).listen((_) => _load());
   }
 
   Future<void> _load() async {
@@ -63,7 +64,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final token = context.read<AuthController>().token;
     final selfId = context.read<AuthController>().user?.id;
     if (token == null || selfId == null) return;
-    
+
     setState(() => _processingId = notifId);
     try {
       await acceptTransaction(token, txId, selfId);
@@ -74,286 +75,29 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     }
   }
 
-  ({Color bg, Color text, String icon}) _getStatusColors(String status) {
-    final st = status.toLowerCase();
-    if (st.contains('pending')) {
-      return (
-        bg: AppColors.primaryColorBlack.withValues(alpha: 0.1),
-        text: AppColors.primaryColorBlack,
-        icon: '⏳'
-      );
+  Future<void> _openTransaction(String notifId, String txId, bool isNew) async {
+    final token = context.read<AuthController>().token;
+    if (token != null && isNew) {
+      await markTransactionNotificationRead(token, notifId);
+      await _load();
     }
-    if (st.contains('accepted') || st.contains('approved')) {
-      return (
-        bg: AppColors.gambianGreen.withValues(alpha: 0.1),
-        text: AppColors.gambianGreen,
-        icon: '✓'
-      );
-    }
-    if (st.contains('rejected') || st.contains('failed')) {
-      return (
-        bg: AppColors.gambianRed.withValues(alpha: 0.1),
-        text: AppColors.gambianRed,
-        icon: '✕'
-      );
-    }
-    return (bg: Colors.grey.shade100, text: Colors.grey.shade700, icon: '•');
+    if (!mounted) return;
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => TransactionDetailScreen(transactionId: txId),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final token = context.read<AuthController>().token;
-    final isMobile = MediaQuery.sizeOf(context).width < 600;
-
-    final Widget content = (_isLoading && _items.isEmpty)
-        ? Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const CircularProgressIndicator(color: AppColors.primaryColorBlack),
-                const SizedBox(height: 16),
-                Text(
-                  'Loading notifications...',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey.shade600,
-                      ),
-                ),
-              ],
-            ),
-          )
-        : _items.isEmpty
-            ? Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 28,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(22),
-                          border: Border.all(
-                            color: Colors.grey.shade300,
-                            width: 2,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.04),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            )
-                          ],
-                        ),
-                        child: Column(
-                          children: [
-                            Container(
-                              width: 80,
-                              height: 80,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: AppColors.primaryColorBlack.withValues(alpha: 0.1),
-                              ),
-                              child: Icon(
-                                Icons.notifications_off_outlined,
-                                size: 40,
-                                color: AppColors.primaryColorBlack.withValues(alpha: 0.4),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'All caught up!',
-                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'No notifications at the moment.\nPayNexa transaction updates will appear here.',
-                              textAlign: TextAlign.center,
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: Colors.grey.shade600,
-                                  ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              )
-            : ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                itemCount: _items.length,
-                itemBuilder: (context, idx) {
-                  final n = _items[idx];
-                  final isNew = n.readAt == null;
-                  final colors = _getStatusColors(n.status);
-                  final isProcessing = _processingId == n.id;
-
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(16),
-                        onTap: () async {
-                          if (token != null && isNew) {
-                            await markTransactionNotificationRead(token, n.id);
-                            await _load();
-                          }
-                          if (!context.mounted) return;
-                          await Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (_) => TransactionDetailScreen(
-                                transactionId: n.transactionId,
-                              ),
-                            ),
-                          );
-                        },
-                        child: Ink(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: isNew
-                                  ? AppColors.primaryColorBlack.withValues(alpha: 0.2)
-                                  : Colors.grey.shade200,
-                              width: isNew ? 2 : 1,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.04),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              // Existing card UI below remains unchanged
-                              // (kept to avoid duplications and preserve current styling)
-                              Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                                  children: [
-                                    Row(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Container(
-                                          width: 36,
-                                          height: 36,
-                                          decoration: BoxDecoration(
-                                            color: colors.bg,
-                                            shape: BoxShape.circle,
-                                          ),
-                                          alignment: Alignment.center,
-                                          child: Text(
-                                            colors.icon,
-                                            style: TextStyle(
-                                              color: colors.text,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                n.message,
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .titleSmall
-                                                    ?.copyWith(
-                                                      fontWeight: FontWeight.w700,
-                                                    ),
-                                              ),
-                                              const SizedBox(height: 8),
-                                              Wrap(
-                                                spacing: 8,
-                                                runSpacing: 6,
-                                                children: [
-                                                  Chip(
-                                                    label: Text(n.role),
-                                                    visualDensity: VisualDensity.compact,
-                                                    backgroundColor: Colors.grey.shade100,
-                                                  ),
-                                                  Chip(
-                                                    label: Text(n.status.replaceAll('_', ' ')),
-                                                    visualDensity: VisualDensity.compact,
-                                                    backgroundColor: colors.bg,
-                                                    labelStyle: TextStyle(color: colors.text),
-                                                  ),
-                                                ],
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        if (isNew)
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 10,
-                                              vertical: 4,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: AppColors.gambianRed,
-                                              borderRadius: BorderRadius.circular(20),
-                                            ),
-                                            child: const Text(
-                                              'New',
-                                              style: TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 11,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                    if (n.status == 'AWAITING_ACCEPTANCE') ...[
-                                      const SizedBox(height: 12),
-                                      Row(
-                                        children: [
-                                          Expanded(
-                                            child: OutlinedButton(
-                                              onPressed: isProcessing
-                                                  ? null
-                                                  : () => _handleAccept(n.id, n.transactionId),
-                                              child: isProcessing
-                                                  ? const SizedBox(
-                                                      width: 18,
-                                                      height: 18,
-                                                      child: CircularProgressIndicator(strokeWidth: 2),
-                                                    )
-                                                  : const Text('Accept'),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              );
-
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text('Notifications'),
+        backgroundColor: Colors.white.withValues(alpha: 0.95),
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
       ),
       body: Stack(
         children: [
@@ -361,13 +105,150 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             decoration: BoxDecoration(gradient: AppColors.pageBackground),
             child: SizedBox.expand(),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(child: content),
-            ],
+          const PatternBackground(opacity: 0.08),
+          SafeArea(
+            top: false,
+            child: RefreshIndicator(
+              color: AppColors.primaryColorBlack,
+              onRefresh: _load,
+              child: CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                      child: Text(
+                        'Notifications',
+                        style: displayHeading(context).copyWith(
+                          fontSize: 30,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: -0.5,
+                          color: const Color(0xFF111827),
+                        ),
+                      ),
+                    ),
+                  ),
+                  if (_isLoading && _items.isEmpty)
+                    const SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: _LoadingState(),
+                    )
+                  else if (_items.isEmpty)
+                    const SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: _EmptyState(),
+                    )
+                  else
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                      sliver: SliverList.separated(
+                        itemCount: _items.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 12),
+                        itemBuilder: (context, idx) {
+                          final n = _items[idx];
+                          final isNew = n.readAt == null;
+                          return TransactionNotificationCard(
+                            item: n,
+                            isProcessing: _processingId == n.id,
+                            onReview: () => _openTransaction(n.id, n.transactionId, isNew),
+                            onAccept: n.status == 'AWAITING_ACCEPTANCE'
+                                ? () => _handleAccept(n.id, n.transactionId)
+                                : null,
+                          );
+                        },
+                      ),
+                    ),
+                ],
+              ),
+            ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _LoadingState extends StatelessWidget {
+  const _LoadingState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const CircularProgressIndicator(color: AppColors.primaryColorBlack),
+          const SizedBox(height: 16),
+          Text(
+            'Loading notifications...',
+            style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 400),
+          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 48),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Colors.grey.shade50, Colors.grey.shade50.withValues(alpha: 0.5)],
+            ),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: Colors.grey.shade300, width: 2, style: BorderStyle.solid),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      AppColors.primaryColorBlack.withValues(alpha: 0.1),
+                      AppColors.primaryColorBlack.withValues(alpha: 0.05),
+                    ],
+                  ),
+                ),
+                child: Icon(
+                  Icons.notifications_none_outlined,
+                  size: 40,
+                  color: AppColors.primaryColorBlack.withValues(alpha: 0.4),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'All caught up!',
+                style: displayHeading(context).copyWith(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'No notifications at the moment. PayNexa transaction updates will appear here.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 14, color: Colors.grey.shade600, height: 1.45),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

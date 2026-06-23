@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 import '../config/constants.dart';
 
 const Duration _kMapsTimeout = Duration(seconds: 22);
-const String _kNomUserAgent = 'SafeTrade-mobile/1.0 (escrow_app; support@safetrade)';
+const String _kNomUserAgent = 'PayNexa-mobile/1.0 (escrow_app; support@paynexa)';
 
 String _trimBase(String s) => s.replaceAll(RegExp(r'/+$'), '');
 

@@ -124,12 +124,37 @@ class _RootRouterState extends State<RootRouter> with WidgetsBindingObserver {
   }
 }
 
-void _handleDeepLink(Uri uri, BuildContext context) async {
+bool _isAppDeepLinkScheme(String scheme) =>
+    scheme == kDeepLinkScheme || scheme == 'safetrade';
+
+void _handleDeepLink(Uri uri, BuildContext context) {
+  // HTTPS bridge from Modem Pay (app checkout uses source=app on /wallet/deposit/*).
+  if (uri.scheme == 'https' &&
+      uri.pathSegments.length >= 3 &&
+      uri.pathSegments[0] == 'wallet' &&
+      uri.pathSegments[1] == 'deposit' &&
+      uri.queryParameters['source'] == 'app') {
+    final outcome = uri.pathSegments[2];
+    final bridge = Uri(
+      scheme: kDeepLinkScheme,
+      host: 'deposit',
+      pathSegments: [outcome],
+      queryParameters: Map<String, String>.from(uri.queryParameters)..remove('source'),
+    );
+    _handleDepositReturn(bridge, context);
+    return;
+  }
+
+  if (_isAppDeepLinkScheme(uri.scheme) && uri.host == 'deposit') {
+    _handleDepositReturn(uri, context);
+    return;
+  }
+
   final pathSegments = uri.pathSegments;
   String? id;
   bool isPublicCheckout = false;
 
-  if (uri.scheme == 'safetrade') {
+  if (_isAppDeepLinkScheme(uri.scheme)) {
     if (uri.host == 'pay' && pathSegments.isNotEmpty) {
       id = pathSegments.first;
       isPublicCheckout = true;
@@ -152,4 +177,65 @@ void _handleDeepLink(Uri uri, BuildContext context) async {
           : TransactionDetailScreen(transactionId: id!),
     ),
   );
+}
+
+void _handleDepositReturn(Uri uri, BuildContext context) {
+  final outcome = uri.pathSegments.isNotEmpty ? uri.pathSegments.first : '';
+  final depositContext = uri.queryParameters['context'] ?? 'billings';
+  final id = uri.queryParameters['id'];
+  final messenger = ScaffoldMessenger.maybeOf(navigatorKey.currentContext ?? context);
+
+  if (outcome == 'cancel') {
+    messenger?.showSnackBar(
+      const SnackBar(content: Text('Payment was cancelled.')),
+    );
+    return;
+  }
+  if (outcome != 'success') return;
+
+  messenger?.showSnackBar(
+    const SnackBar(content: Text('Payment received. Your wallet will update shortly.')),
+  );
+
+  switch (depositContext) {
+    case 'transaction':
+      if (id != null && id.isNotEmpty) {
+        navigatorKey.currentState?.pushReplacement(
+          MaterialPageRoute<void>(
+            builder: (_) => TransactionDetailScreen(
+              transactionId: id,
+              resumePaymentAfterDeposit: true,
+            ),
+          ),
+        );
+      }
+      break;
+    case 'pay':
+      if (id != null && id.isNotEmpty) {
+        navigatorKey.currentState?.pushReplacement(
+          MaterialPageRoute<void>(
+            builder: (_) => PublicCheckoutScreen(
+              ref: id,
+              resumePaymentAfterDeposit: true,
+            ),
+          ),
+        );
+      }
+      break;
+    case 'booking':
+      if (id != null && id.isNotEmpty) {
+        navigatorKey.currentState?.pushReplacement(
+          MaterialPageRoute<void>(
+            builder: (_) => MarketplaceBookingDetailScreen(
+              bookingId: id,
+              initialMode: 'me',
+            ),
+          ),
+        );
+      }
+      break;
+    case 'billings':
+    default:
+      break;
+  }
 }

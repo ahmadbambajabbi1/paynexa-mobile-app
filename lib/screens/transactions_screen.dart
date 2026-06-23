@@ -977,6 +977,7 @@ import '../models/transaction_models.dart';
 import '../models/wallet_models.dart';
 import '../theme/app_colors.dart';
 import '../widgets/create_transaction_sheet.dart';
+import '../widgets/notification_bell_button.dart';
 import 'personal_kyc_apply_screen.dart';
 import 'transaction_detail_screen.dart';
 
@@ -1103,7 +1104,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                 padding: EdgeInsets.only(
                   left: 16,
                   right: 16,
-                  top: MediaQuery.of(context).padding.top + 90, // space for the fixed button
+                  top: MediaQuery.of(context).padding.top + 96, // space for header row
                   bottom: 32,
                 ),
                 children: [
@@ -1177,39 +1178,46 @@ class _Header extends StatelessWidget {
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: GestureDetector(
-            onTap: onCreate,
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              decoration: BoxDecoration(
-                color: _primary,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: _primary.withValues(alpha: 0.15),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(icon, size: 18, color: Colors.white),
-                  const SizedBox(width: 10),
-                  Text(
-                    label,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w900,
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+          child: Row(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  onTap: onCreate,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    decoration: BoxDecoration(
+                      color: _primary,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: _primary.withValues(alpha: 0.15),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(icon, size: 18, color: Colors.white),
+                        const SizedBox(width: 10),
+                        Text(
+                          label,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
+                ),
               ),
-            ),
+              const SizedBox(width: 10),
+              const NotificationBellButton(),
+            ],
           ),
         ),
       ),

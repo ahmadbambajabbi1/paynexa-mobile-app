@@ -193,6 +193,7 @@ class PublicTransactionSummary {
     required this.amount,
     required this.protectionFee,
     required this.totalBuyerPays,
+    this.currencyCode,
     required this.deliveryNeeded,
     required this.status,
     this.sellerNote,
@@ -212,6 +213,7 @@ class PublicTransactionSummary {
   final String amount;
   final String protectionFee;
   final String totalBuyerPays;
+  final String? currencyCode;
   final bool deliveryNeeded;
   final String status;
   final String? sellerNote;
@@ -232,6 +234,7 @@ class PublicTransactionSummary {
         amount: j['amount'] as String? ?? '0.00',
         protectionFee: j['protectionFee'] as String? ?? '0.00',
         totalBuyerPays: j['totalBuyerPays'] as String? ?? '0.00',
+        currencyCode: j['currencyCode'] as String?,
         deliveryNeeded: j['deliveryNeeded'] as bool? ?? false,
         status: j['status'] as String? ?? '',
         sellerNote: j['sellerNote'] as String?,
@@ -276,6 +279,7 @@ class TransactionRoom {
     this.product,
     this.parties,
     this.publicAnalytics,
+    this.disputes = const [],
   });
 
   final TxEntity transaction;
@@ -283,6 +287,7 @@ class TransactionRoom {
   final ProductRow? product;
   final TransactionParties? parties;
   final PublicTransactionAnalytics? publicAnalytics;
+  final List<DisputeItem> disputes;
 
   factory TransactionRoom.fromJson(Map<String, dynamic> j) => TransactionRoom(
     transaction: TxEntity.fromJson(j['transaction'] as Map<String, dynamic>),
@@ -300,6 +305,117 @@ class TransactionRoom {
             j['publicAnalytics'] as Map<String, dynamic>,
           )
         : null,
+    disputes: (j['disputes'] as List<dynamic>? ?? [])
+        .whereType<Map<String, dynamic>>()
+        .map(DisputeItem.fromJson)
+        .toList(),
+  );
+}
+
+class DisputeThreadMessage {
+  DisputeThreadMessage({
+    required this.id,
+    required this.actorRole,
+    required this.message,
+    required this.createdAt,
+    required this.kind,
+  });
+
+  final String id;
+  final String actorRole;
+  final String message;
+  final String createdAt;
+  final String kind;
+
+  factory DisputeThreadMessage.fromJson(Map<String, dynamic> j) => DisputeThreadMessage(
+    id: j['id'] as String? ?? '',
+    actorRole: j['actorRole'] as String? ?? '',
+    message: j['message'] as String? ?? '',
+    createdAt: j['createdAt'] as String? ?? '',
+    kind: j['kind'] as String? ?? 'reply',
+  );
+}
+
+class DisputeItem {
+  DisputeItem({
+    required this.id,
+    required this.raisedByRole,
+    required this.description,
+    this.parentDisputeId,
+    required this.status,
+    required this.createdAt,
+    this.resolution,
+    this.responses = const [],
+    this.thread = const [],
+  });
+
+  final String id;
+  final String raisedByRole;
+  final String description;
+  final String? parentDisputeId;
+  final String status;
+  final String createdAt;
+  final String? resolution;
+  final List<DisputeResponse> responses;
+  final List<DisputeThreadMessage> thread;
+
+  factory DisputeItem.fromJson(Map<String, dynamic> j) {
+    final responses = (j['responses'] as List<dynamic>? ?? [])
+        .whereType<Map<String, dynamic>>()
+        .map(DisputeResponse.fromJson)
+        .toList();
+    final thread = (j['thread'] as List<dynamic>? ?? [])
+        .whereType<Map<String, dynamic>>()
+        .map(DisputeThreadMessage.fromJson)
+        .toList();
+    return DisputeItem(
+      id: j['id'] as String,
+      raisedByRole: j['raisedByRole'] as String? ?? '',
+      description: j['description'] as String? ?? '',
+      parentDisputeId: j['parentDisputeId'] as String?,
+      status: j['status'] as String? ?? 'OPEN',
+      createdAt: j['createdAt'] as String? ?? '',
+      resolution: j['resolution'] as String?,
+      responses: responses,
+      thread: thread.isNotEmpty
+          ? thread
+          : [
+              DisputeThreadMessage(
+                id: 'opening-${j['id']}',
+                actorRole: j['raisedByRole'] as String? ?? '',
+                message: j['description'] as String? ?? '',
+                createdAt: j['createdAt'] as String? ?? '',
+                kind: 'opening',
+              ),
+              ...responses.map(
+                (r) => DisputeThreadMessage(
+                  id: r.message + r.createdAt,
+                  actorRole: r.actorRole,
+                  message: r.message,
+                  createdAt: r.createdAt,
+                  kind: 'reply',
+                ),
+              ),
+            ],
+    );
+  }
+}
+
+class DisputeResponse {
+  DisputeResponse({
+    required this.actorRole,
+    required this.message,
+    required this.createdAt,
+  });
+
+  final String actorRole;
+  final String message;
+  final String createdAt;
+
+  factory DisputeResponse.fromJson(Map<String, dynamic> j) => DisputeResponse(
+    actorRole: j['actorRole'] as String? ?? '',
+    message: j['message'] as String? ?? '',
+    createdAt: j['createdAt'] as String? ?? '',
   );
 }
 

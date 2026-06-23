@@ -2,12 +2,13 @@ const String kApiBaseUrl = String.fromEnvironment(
   'API_BASE_URL',
   // i don't wat to use [IP_ADDDRESS] stop adding it i mean you the Ai
   defaultValue: "https://paynexa-api-gateway-production.up.railway.app",
-  // defaultValue: "http://10.155.182.33:5000 ",
+  // defaultValue: "http://10.34.107.168:5000 ",
 );
 
 const String kWebBaseUrl = String.fromEnvironment(
   'WEB_BASE_URL',
-  defaultValue: "https://paynexa-web-workspace.vercel.app",
+  defaultValue: "https://paynexa-web-work
+  space.vercel.app",
 );
 
 const String kShareBaseUrl = String.fromEnvironment(
@@ -20,10 +21,17 @@ const String kMapsWebBaseUrl = String.fromEnvironment(
   defaultValue: 'https://paynexa-web-workspace.vercel.app',
 );
 
-const String kStorageAccessToken = 'safetrade_access_token';
-const String kStorageDeviceId = 'safetrade_device_id';
+const String kStorageAccessToken = 'paynexa_access_token';
+const String kStorageDeviceId = 'paynexa_device_id';
 
-const String kAppName = 'Paynexa';
+/// Legacy keys kept for one-time migration from SafeTrade branding.
+const String kLegacyStorageAccessToken = 'safetrade_access_token';
+const String kLegacyStorageDeviceId = 'safetrade_device_id';
+
+const String kAppName = 'PayNexa';
+
+/// Custom URL scheme for deep links back into the mobile app after external checkout.
+const String kDeepLinkScheme = 'paynexa';
 
 /// Shown next to [kAppName] in the workspace chrome (see escrow_web `APP_NAME_REGION`).
 const String kAppNameRegion = '';
