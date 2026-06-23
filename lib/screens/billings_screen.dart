@@ -200,7 +200,7 @@ class _WalletBodyState extends State<_WalletBody>
         paymentSheetParameters: SetupPaymentSheetParameters(
           merchantDisplayName: kAppName,
           setupIntentClientSecret: clientSecret,
-          returnURL: 'safetrade://stripe-redirect',
+          returnURL: '$kDeepLinkScheme://stripe-redirect',
           allowsDelayedPaymentMethods: false,
         ),
       );
@@ -1125,7 +1125,8 @@ class _TransactionsTab extends StatelessWidget {
   bool _isEscrowLedger(WalletLedgerEntry entry) {
     if (entry.action.startsWith('Paid transaction') ||
         entry.action.startsWith('Received for transaction') ||
-        entry.action.startsWith('Refunded for transaction')) {
+        entry.action.startsWith('Refunded for transaction') ||
+        entry.action.startsWith('Refunded transaction')) {
       return true;
     }
     return false;
@@ -1137,7 +1138,10 @@ class _TransactionsTab extends StatelessWidget {
       final title = parts[1];
       if (action.startsWith('Paid transaction')) return 'Escrow payment · $title';
       if (action.startsWith('Received for transaction')) return 'Escrow payout · $title';
-      if (action.startsWith('Refunded for transaction')) return 'Escrow refund · $title';
+      if (action.startsWith('Refunded for transaction') ||
+          action.startsWith('Refunded transaction')) {
+        return 'Escrow refund · $title';
+      }
     }
     return action;
   }

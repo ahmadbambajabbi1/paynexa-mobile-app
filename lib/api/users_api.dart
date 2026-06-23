@@ -321,3 +321,100 @@ class PersonalKycStatus {
   final bool approved;
   final String? approvedAt;
 }
+
+class DeliveryAddress {
+  DeliveryAddress({
+    required this.id,
+    this.label,
+    required this.fullName,
+    required this.phone,
+    required this.email,
+    required this.addressLine1,
+    this.addressLine2,
+    required this.city,
+    required this.stateRegion,
+    required this.postalCode,
+    required this.country,
+    this.deliveryInstructions,
+    required this.isDefault,
+  });
+
+  final String id;
+  final String? label;
+  final String fullName;
+  final String phone;
+  final String email;
+  final String addressLine1;
+  final String? addressLine2;
+  final String city;
+  final String stateRegion;
+  final String postalCode;
+  final String country;
+  final String? deliveryInstructions;
+  final bool isDefault;
+
+  factory DeliveryAddress.fromJson(Map<String, dynamic> j) => DeliveryAddress(
+    id: j['id'] as String,
+    label: j['label'] as String?,
+    fullName: j['fullName'] as String,
+    phone: j['phone'] as String,
+    email: j['email'] as String,
+    addressLine1: j['addressLine1'] as String,
+    addressLine2: j['addressLine2'] as String?,
+    city: j['city'] as String,
+    stateRegion: j['stateRegion'] as String,
+    postalCode: j['postalCode'] as String,
+    country: j['country'] as String,
+    deliveryInstructions: j['deliveryInstructions'] as String?,
+    isDefault: j['isDefault'] as bool? ?? false,
+  );
+}
+
+Future<List<DeliveryAddress>> listDeliveryAddresses(String token) async {
+  final raw = await apiFetch('/users/me/delivery-addresses', method: 'GET', token: token)
+      as Map<String, dynamic>;
+  final items = raw['items'];
+  if (items is! List) return [];
+  return items
+      .whereType<Map<String, dynamic>>()
+      .map(DeliveryAddress.fromJson)
+      .toList();
+}
+
+Future<DeliveryAddress> createDeliveryAddress(
+  String token, {
+  String? label,
+  required String fullName,
+  required String phone,
+  required String email,
+  required String addressLine1,
+  String? addressLine2,
+  required String city,
+  required String stateRegion,
+  required String postalCode,
+  required String country,
+  String? deliveryInstructions,
+  bool isDefault = false,
+}) async {
+  final raw = await apiFetch(
+    '/users/me/delivery-addresses',
+    method: 'POST',
+    token: token,
+    body: {
+      if (label != null && label.trim().isNotEmpty) 'label': label.trim(),
+      'fullName': fullName,
+      'phone': phone,
+      'email': email,
+      'addressLine1': addressLine1,
+      if (addressLine2 != null && addressLine2.trim().isNotEmpty) 'addressLine2': addressLine2.trim(),
+      'city': city,
+      'stateRegion': stateRegion,
+      'postalCode': postalCode,
+      'country': country,
+      if (deliveryInstructions != null && deliveryInstructions.trim().isNotEmpty)
+        'deliveryInstructions': deliveryInstructions.trim(),
+      'isDefault': isDefault,
+    },
+  ) as Map<String, dynamic>;
+  return DeliveryAddress.fromJson(raw);
+}

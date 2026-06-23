@@ -13,6 +13,9 @@ Future<String?> showTransactionPaymentSheet({
   required BuildContext context,
   required String transactionId,
   required double amount,
+  String? currency,
+  String depositReturnContext = 'transaction',
+  String? depositReturnId,
 }) async {
   return showModalBottomSheet<String>(
     context: context,
@@ -22,6 +25,9 @@ Future<String?> showTransactionPaymentSheet({
     builder: (_) => _TransactionPaymentSheet(
       transactionId: transactionId,
       amount: amount,
+      currency: currency,
+      depositReturnContext: depositReturnContext,
+      depositReturnId: depositReturnId ?? transactionId,
     ),
   );
 }
@@ -30,10 +36,16 @@ class _TransactionPaymentSheet extends StatefulWidget {
   const _TransactionPaymentSheet({
     required this.transactionId,
     required this.amount,
+    this.currency,
+    required this.depositReturnContext,
+    required this.depositReturnId,
   });
 
   final String transactionId;
   final double amount;
+  final String? currency;
+  final String depositReturnContext;
+  final String depositReturnId;
 
   @override
   State<_TransactionPaymentSheet> createState() => _TransactionPaymentSheetState();
@@ -45,6 +57,8 @@ class _TransactionPaymentSheetState extends State<_TransactionPaymentSheet> {
   int _modeIndex = 0;
   String _walletBalance = '0';
   String? _walletCurrency;
+
+  String? get _displayCurrency => widget.currency ?? _walletCurrency;
   List<Map<String, dynamic>> _cardMethods = const [];
   String? _selectedCardMethodId;
 
@@ -59,8 +73,11 @@ class _TransactionPaymentSheetState extends State<_TransactionPaymentSheet> {
     final funded = await showWalletDepositSheet(
       context: context,
       suggestedAmount: _deficit > 0 ? _deficit : widget.amount,
-      currency: _walletCurrency,
+      currency: _displayCurrency,
       clientRequestIdPrefix: 'tx-deposit-${widget.transactionId}',
+      depositReturnContext: widget.depositReturnContext,
+      depositReturnId: widget.depositReturnId,
+      paymentTransactionId: widget.transactionId,
     );
     if (!funded || !mounted) return;
     await _refresh();
@@ -189,7 +206,7 @@ class _TransactionPaymentSheetState extends State<_TransactionPaymentSheet> {
               ),
               const SizedBox(height: 6),
               Text(
-                'Amount due: ${moneyText(widget.amount, _walletCurrency)}',
+                'Amount due: ${moneyText(widget.amount, _displayCurrency)}',
                 style: const TextStyle(color: Colors.white70),
               ),
               const SizedBox(height: 12),
@@ -223,7 +240,7 @@ class _TransactionPaymentSheetState extends State<_TransactionPaymentSheet> {
                 if (_modeIndex == 0) ...[
                   _InfoRow(
                     label: 'Wallet balance',
-                    value: moneyText(_walletBalance, _walletCurrency),
+                    value: moneyText(_walletBalance, _displayCurrency),
                     valueColor: canWallet ? AppColors.gambianGreen : AppColors.gambianRed,
                     labelColor: Colors.white70,
                   ),
@@ -231,7 +248,7 @@ class _TransactionPaymentSheetState extends State<_TransactionPaymentSheet> {
                     const SizedBox(height: 8),
                     _InfoRow(
                       label: 'Amount needed',
-                      value: moneyText(_deficit, _walletCurrency),
+                      value: moneyText(_deficit, _displayCurrency),
                       valueColor: Colors.orange.shade300,
                       labelColor: Colors.white70,
                     ),

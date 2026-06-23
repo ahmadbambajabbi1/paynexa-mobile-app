@@ -185,6 +185,18 @@ Future<Map<String, dynamic>> payTransactionFromWallet(
   return raw;
 }
 
+Future<Map<String, dynamic>> getTransactionPaymentQuote(
+  String token, {
+  required String transactionId,
+}) async {
+  final raw = await apiFetch(
+    '/escrow/wallet/transactions/${Uri.encodeComponent(transactionId)}/payment-quote',
+    method: 'GET',
+    token: token,
+  ) as Map<String, dynamic>;
+  return raw;
+}
+
 Future<Map<String, dynamic>> payMarketplaceServiceBooking(
   String token, {
   required String bookingId,

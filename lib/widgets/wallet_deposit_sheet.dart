@@ -6,7 +6,8 @@ import 'package:url_launcher/url_launcher.dart';
 import '../api/escrow_api.dart' as escrow;
 import '../auth/auth_controller.dart';
 import '../theme/app_colors.dart';
-import '../utils/currency.dart';
+import '../utils/modempay_return_urls.dart';
+import '../utils/pending_payment_resume.dart';
 import 'glass_card.dart';
 
 /// Inline fund-wallet UI for checkout flows. Returns true when wallet was credited.
@@ -15,6 +16,9 @@ Future<bool> showWalletDepositSheet({
   required double suggestedAmount,
   String? currency,
   String? clientRequestIdPrefix,
+  String depositReturnContext = 'billings',
+  String? depositReturnId,
+  String? paymentTransactionId,
 }) async {
   final result = await showModalBottomSheet<bool>(
     context: context,
@@ -25,6 +29,9 @@ Future<bool> showWalletDepositSheet({
       suggestedAmount: suggestedAmount,
       currency: currency,
       clientRequestIdPrefix: clientRequestIdPrefix,
+      depositReturnContext: depositReturnContext,
+      depositReturnId: depositReturnId,
+      paymentTransactionId: paymentTransactionId,
     ),
   );
   return result == true;
@@ -35,11 +42,17 @@ class _WalletDepositSheet extends StatefulWidget {
     required this.suggestedAmount,
     required this.currency,
     required this.clientRequestIdPrefix,
+    required this.depositReturnContext,
+    required this.depositReturnId,
+    required this.paymentTransactionId,
   });
 
   final double suggestedAmount;
   final String? currency;
   final String? clientRequestIdPrefix;
+  final String depositReturnContext;
+  final String? depositReturnId;
+  final String? paymentTransactionId;
 
   @override
   State<_WalletDepositSheet> createState() => _WalletDepositSheetState();
@@ -134,6 +147,13 @@ class _WalletDepositSheetState extends State<_WalletDepositSheet> {
   Future<void> _startMobileDeposit(double amount) async {
     final token = context.read<AuthController>().token;
     if (token == null) return;
+
+    PendingPaymentResume.save(
+      context: widget.depositReturnContext,
+      transactionId: widget.paymentTransactionId ?? widget.depositReturnId ?? '',
+      ref: widget.depositReturnContext == 'pay' ? widget.depositReturnId : null,
+      amount: amount,
+    );
 
     final prefix = widget.clientRequestIdPrefix ?? 'deposit';
     final res = await escrow.createModernPayDepositIntent(

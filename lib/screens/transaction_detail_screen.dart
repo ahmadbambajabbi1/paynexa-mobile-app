@@ -22,6 +22,8 @@ import '../utils/parse_terms.dart';
 import '../utils/transaction_room_title.dart';
 import '../utils/transaction_ui.dart';
 import '../widgets/transaction_payment_sheet.dart';
+import '../widgets/raise_dispute_sheet.dart';
+import '../widgets/dispute_thread_section.dart';
 import '../widgets/transaction_room_product_section.dart';
 
 class _TransactionDetailTab {
@@ -33,9 +35,14 @@ class _TransactionDetailTab {
 }
 
 class TransactionDetailScreen extends StatefulWidget {
-  const TransactionDetailScreen({super.key, required this.transactionId});
+  const TransactionDetailScreen({
+    super.key,
+    required this.transactionId,
+    this.resumePaymentAfterDeposit = false,
+  });
 
   final String transactionId;
+  final bool resumePaymentAfterDeposit;
 
   @override
   State<TransactionDetailScreen> createState() =>
@@ -70,6 +77,9 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
         _room = r;
         _walletCurrency = wallet.currency;
       });
+      if (widget.resumePaymentAfterDeposit) {
+        await _maybeResumePayment(r);
+      }
     } catch (e) {
       setState(() {
         _err = errorMessage(e);
@@ -104,6 +114,31 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
     final uid = auth.user?.id;
     final room = _room;
     if (token == null || uid == null || room == null) return;
+    if (next == 'DISPUTED') {
+      await RaiseDisputeSheet.show(
+        context,
+        onSubmit: (reason) async {
+          setState(() {
+            _busy = true;
+            _err = null;
+          });
+          try {
+            await raiseTransactionDispute(
+              token,
+              room.transaction.id,
+              actorId: uid,
+              reason: reason,
+            );
+            await _load();
+          } catch (e) {
+            setState(() => _err = errorMessage(e));
+          } finally {
+            if (mounted) setState(() => _busy = false);
+          }
+        },
+      );
+      return;
+    }
     setState(() {
       _busy = true;
       _err = null;
@@ -310,6 +345,15 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
     }
   }
 
+  Future<void> _maybeResumePayment(TransactionRoom room) async {
+    final auth = context.read<AuthController>();
+    final userId = auth.user?.id;
+    final tx = room.transaction;
+    if (userId == null || tx.buyerId != userId) return;
+    if (tx.status != 'AWAITING_FUNDING') return;
+    await _payFromWallet(tx);
+  }
+
   Future<void> _payFromWallet(TxEntity tx) async {
     final token = context.read<AuthController>().token;
     if (token == null) return;
@@ -320,6 +364,8 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
       context: context,
       transactionId: tx.id,
       amount: amount,
+      depositReturnContext: 'transaction',
+      depositReturnId: tx.id,
     );
     if (paid == null || !mounted) return;
 
@@ -565,6 +611,43 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
     }).toList();
   }
 
+  bool _showDisputeSection(TxEntity tx, String selfRole) {
+    if (selfRole != 'buyer' && selfRole != 'seller') return false;
+    if (tx.buyerId == null || tx.buyerId!.isEmpty) return false;
+    const eligible = {
+      'FUNDED',
+      'IN_PROGRESS',
+      'INSPECTION',
+      'DISPUTED',
+      'COMPLETED',
+      'REFUNDED',
+    };
+    return eligible.contains(tx.status) ||
+        (_room?.disputes.isNotEmpty ?? false);
+  }
+
+  Widget? _disputeSection(
+    AuthController auth,
+    MeUser? user,
+    TxEntity tx,
+    String selfRole,
+  ) {
+    if (user == null || auth.token == null || _room == null) return null;
+    if (!_showDisputeSection(tx, selfRole)) return null;
+    return Padding(
+      padding: const EdgeInsets.only(top: 14),
+      child: DisputeThreadSection(
+        token: auth.token!,
+        transactionId: tx.id,
+        actorId: user.id,
+        selfRole: selfRole == 'buyer' || selfRole == 'seller' ? selfRole : null,
+        disputes: _room!.disputes,
+        onReload: _load,
+        onOpenNewDispute: () => _transition('DISPUTED'),
+      ),
+    );
+  }
+
   Widget _overviewTab(
     TxEntity tx,
     String title,
@@ -575,6 +658,9 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
     bool canPayFromWallet,
     String selfRole,
   ) {
+    final auth = context.read<AuthController>();
+    final user = auth.user;
+    final dispute = _disputeSection(auth, user, tx, selfRole);
     final openActions = nextStates.where((s) => s != 'CLOSED').toList();
     final canClose = canBuyerCloseTransaction(
       selfRole,
@@ -607,15 +693,22 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
               ),
             ),
           ],
+          if (dispute != null) dispute,
         ],
       );
     }
 
     if (!hasActions) {
-      return _sectionCard(
-        title: 'Deal summary',
-        subtitle: 'Funding and amount for this escrow',
-        child: _dealSummary(tx),
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _sectionCard(
+            title: 'Deal summary',
+            subtitle: 'Funding and amount for this escrow',
+            child: _dealSummary(tx),
+          ),
+          if (dispute != null) dispute,
+        ],
       );
     }
 
@@ -639,6 +732,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
             canClose: canClose,
           ),
         ),
+        if (dispute != null) dispute,
       ],
     );
   }

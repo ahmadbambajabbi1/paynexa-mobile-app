@@ -40,6 +40,18 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data
+                    android:scheme="paynexa"
+                    android:host="pay" />
+                <data
+                    android:scheme="paynexa"
+                    android:host="transactions" />
+                <data
+                    android:scheme="paynexa"
+                    android:host="stripe-redirect" />
+                <data
+                    android:scheme="paynexa"
+                    android:host="deposit" />
+                <data
                     android:scheme="safetrade"
                     android:host="pay" />
                 <data
